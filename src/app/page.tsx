@@ -16,7 +16,7 @@ import { useZenStore } from "@/hooks/use-zen-store";
 import type { Transaction } from "@/lib/types";
 import { parseTransactionDescription } from "./actions";
 import { Numpad } from "@/components/ui/numpad";
-import { Icon } from "@/lib/icons";
+import { Icon } from "@/lib/icons.tsx";
 
 type Step = "amount" | "description" | "loading" | "done";
 
@@ -119,7 +119,7 @@ export default function HomePage() {
   }[step];
   
   return (
-    <div className="flex-1 w-full flex items-center justify-center p-4">
+    <div className="w-full flex-1 flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center">
           <h1 className="text-4xl md:text-5xl font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">

@@ -34,7 +34,7 @@ import { Button } from "@/components/ui/button";
 import { Transaction } from "@/lib/types";
 import { NumpadDialog } from "@/components/ui/numpad-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Icon } from "@/lib/icons";
+import { Icon } from "@/lib/icons.tsx";
 
 
 type SortKey = "description" | "category" | "amount" | "date";

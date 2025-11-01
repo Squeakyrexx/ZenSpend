@@ -1,6 +1,6 @@
 import type { Budget, Category } from '@/lib/types';
 import { CATEGORIES } from '@/lib/types';
-import type { IconName } from './icons';
+import type { IconName } from './icons.tsx';
 
 export const CATEGORY_ICONS: Record<Category, IconName> = {
   'Food & Drink': 'Coffee',

@@ -11,7 +11,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import { CATEGORY_ICONS } from '@/lib/data';
-import { ICONS, IconName } from '@/lib/icons';
+import { ICONS, IconName } from '@/lib/icons.tsx';
 
 const CategorySchema = z.enum([
   'Food & Drink',

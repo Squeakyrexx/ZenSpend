@@ -10,7 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { ICONS } from '@/lib/icons';
+import { ICONS } from '@/lib/icons.tsx';
 
 const ExtractTransactionDetailsInputSchema = z.object({
   transactionText: z
