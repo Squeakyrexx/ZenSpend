@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Home,
+  LayoutDashboard,
   Receipt,
   Settings,
   Sparkles,
@@ -23,7 +23,7 @@ import {
 import { Logo } from "@/components/icons";
 
 const navItems = [
-  { href: "/", label: "Home", icon: Home },
+  { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/transactions", label: "Transactions", icon: Receipt },
   { href: "/budgets", label: "Budgets", icon: Wallet },
   { href: "/recurring", label: "Recurring", icon: Repeat },

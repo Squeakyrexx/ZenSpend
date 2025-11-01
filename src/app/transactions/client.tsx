@@ -29,12 +29,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowUpDown, Pencil, Trash2 } from "lucide-react";
+import { ArrowUpDown, Pencil, Trash2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Transaction } from "@/lib/types";
 import { NumpadDialog } from "@/components/ui/numpad-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Icon } from "@/lib/icons.tsx";
+import { AddTransactionDialog } from "@/components/add-transaction-dialog";
 
 
 type SortKey = "description" | "category" | "amount" | "date";
@@ -47,6 +48,8 @@ export function TransactionsClient() {
   );
   const [editingTransaction, setEditingTransaction] = React.useState<Transaction | null>(null);
   const [deletingTransaction, setDeletingTransaction] = React.useState<Transaction | null>(null);
+  const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
+
   const { toast } = useToast();
 
   const handleSort = (key: SortKey) => {
@@ -133,7 +136,7 @@ export function TransactionsClient() {
   }
 
   return (
-    <div className="p-4 md:p-8 space-y-4">
+    <div className="p-4 md:p-8 space-y-4 relative h-full">
       <Card>
         <CardHeader>
           <CardTitle>All Transactions</CardTitle>
@@ -146,7 +149,7 @@ export function TransactionsClient() {
             <div className="text-center py-12">
               <p className="text-lg font-semibold">No transactions yet.</p>
               <p className="text-muted-foreground">
-                Start by adding a transaction on the Home page.
+                Click the + button to add a transaction.
               </p>
             </div>
           ) : (
@@ -216,6 +219,17 @@ export function TransactionsClient() {
           )}
         </CardContent>
       </Card>
+      
+      <Button
+        className="fixed bottom-20 right-6 md:bottom-8 md:right-8 h-16 w-16 rounded-full shadow-lg"
+        size="icon"
+        onClick={() => setIsAddDialogOpen(true)}
+      >
+        <Plus className="h-8 w-8" />
+        <span className="sr-only">Add Transaction</span>
+      </Button>
+
+      <AddTransactionDialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen} />
 
       {editingTransaction && (
          <NumpadDialog

@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Receipt, Wallet, Sparkles, Settings, Repeat } from "lucide-react";
+import { LayoutDashboard, Receipt, Wallet, Sparkles, Repeat } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { href: "/", label: "Home", icon: Home },
+  { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/transactions", label: "Transactions", icon: Receipt },
   { href: "/budgets", label: "Budgets", icon: Wallet },
   { href: "/recurring", label: "Recurring", icon: Repeat },
@@ -32,16 +32,6 @@ export function MobileNav() {
             <span>{item.label}</span>
           </Link>
         ))}
-         <Link
-            href="/settings"
-            className={cn(
-              "flex flex-col items-center justify-center gap-1 text-xs text-muted-foreground transition-colors hover:text-primary",
-              pathname === "/settings" && "text-primary"
-            )}
-          >
-            <Settings className="w-6 h-6" />
-            <span>Settings</span>
-          </Link>
       </nav>
     </div>
   );
