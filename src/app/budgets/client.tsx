@@ -30,7 +30,8 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ICONS, Icon } from "@/lib/icons.tsx";
+import { Icon } from "@/lib/icons.tsx";
+import { ICONS } from "@/lib/icons.tsx";
 import {
   AlertDialog,
   AlertDialogAction,
