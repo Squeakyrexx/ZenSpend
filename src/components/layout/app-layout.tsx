@@ -8,22 +8,28 @@ import { MobileNav } from "@/components/layout/mobile-nav";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const isMobile = useIsMobile();
-  // The sidebar state is managed by the provider, we can read the cookie to set the default state.
-  // We will let the provider handle it for this simple case.
   const [isSidebarOpen, setSidebarOpen] = React.useState(true);
+  const [isClient, setIsClient] = React.useState(false);
+
+  React.useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   return (
     <SidebarProvider open={isSidebarOpen} onOpenChange={setSidebarOpen}>
       <div className="min-h-screen md:flex">
-        {!isMobile && (
+        {isClient && !isMobile && (
           <Sidebar collapsible="icon">
             <MainNav />
           </Sidebar>
         )}
+        {!isClient && ( // Render a placeholder on the server
+            <div className="hidden md:block w-12" />
+        )}
         <main className="flex-1">
           {children}
         </main>
-        {isMobile && <MobileNav />}
+        {isClient && isMobile && <MobileNav />}
       </div>
     </SidebarProvider>
   );
