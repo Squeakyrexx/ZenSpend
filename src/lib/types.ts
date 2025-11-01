@@ -28,3 +28,12 @@ export interface Budget {
   spent: number;
   icon: string;
 }
+
+export interface RecurringPayment {
+  id: string;
+  description: string;
+  amount: number;
+  category: Category;
+  icon: string;
+  dayOfMonth: number;
+}

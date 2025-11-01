@@ -31,7 +31,7 @@ export function SettingsClient() {
     resetData();
     toast({
       title: "Data Reset",
-      description: "All your transactions and budgets have been reset.",
+      description: "All your data has been reset.",
     });
   };
 
@@ -47,7 +47,7 @@ export function SettingsClient() {
             <div>
               <h3 className="font-semibold">Reset Data</h3>
               <p className="text-sm text-muted-foreground">
-                This will permanently delete all your transactions and reset budgets.
+                This will permanently delete all your transactions, custom categories, recurring payments, and reset budgets.
               </p>
             </div>
             <AlertDialog>
@@ -59,12 +59,12 @@ export function SettingsClient() {
                   <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                   <AlertDialogDescription>
                     This action cannot be undone. This will permanently delete
-                    all your transaction data and reset your budgets to default.
-                  </AlertDialogDescription>
+                    all your data.
+                  </Aler  tDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleReset}>
+                  <AlertDialogAction onClick={handleReset} className="bg-destructive hover:bg-destructive/90">
                     Continue
                   </AlertDialogAction>
                 </AlertDialogFooter>

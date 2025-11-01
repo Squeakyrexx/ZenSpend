@@ -28,6 +28,7 @@ import {
   Film,
   Utensils,
   Pizza,
+  Repeat,
 } from "lucide-react";
 
 export const ICONS = [
@@ -58,6 +59,7 @@ export const ICONS = [
   "Film",
   "Utensils",
   "Pizza",
+  "Repeat",
 ] as const;
 
 export type IconName = (typeof ICONS)[number];
@@ -94,6 +96,7 @@ const icons: IconsType = {
   Film,
   Utensils,
   Pizza,
+  Repeat,
 };
 
 interface IconProps extends LucideProps {

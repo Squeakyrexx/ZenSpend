@@ -4,12 +4,12 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  BarChart2,
   Home,
   Receipt,
   Settings,
   Sparkles,
   Wallet,
+  Repeat,
 } from "lucide-react";
 
 import {
@@ -26,6 +26,7 @@ const navItems = [
   { href: "/", label: "Home", icon: Home },
   { href: "/transactions", label: "Transactions", icon: Receipt },
   { href: "/budgets", label: "Budgets", icon: Wallet },
+  { href: "/recurring", label: "Recurring", icon: Repeat },
   { href: "/insights", label: "Insights", icon: Sparkles },
 ];
 

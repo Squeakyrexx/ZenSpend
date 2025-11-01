@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import type { Transaction, Budget, Category } from "@/lib/types";
+import type { Transaction, Budget, Category, RecurringPayment } from "@/lib/types";
 import { DEFAULT_BUDGETS } from "@/lib/data";
 
 const useLocalStorage = <T,>(key: string, initialValue: T) => {
@@ -36,6 +36,7 @@ const useLocalStorage = <T,>(key: string, initialValue: T) => {
 export const useZenStore = () => {
   const [transactions, setTransactions] = useLocalStorage<Transaction[]>("zen-transactions", []);
   const [budgets, setBudgets] = useLocalStorage<Budget[]>("zen-budgets", DEFAULT_BUDGETS);
+  const [recurringPayments, setRecurringPayments] = useLocalStorage<RecurringPayment[]>("zen-recurring-payments", []);
   const [isInitialized, setIsInitialized] = useState(false);
 
   const categories = budgets.map(b => b.category);
@@ -78,11 +79,22 @@ export const useZenStore = () => {
       setTransactions(prev => prev.filter(t => t.category !== category));
     }, [setBudgets, setTransactions]
   );
+  
+  const addRecurringPayment = useCallback((payment: Omit<RecurringPayment, 'id'>) => {
+      const newPayment = { ...payment, id: new Date().toISOString() + Math.random() };
+      setRecurringPayments(prev => [...prev, newPayment]);
+  }, [setRecurringPayments]);
+  
+  const deleteRecurringPayment = useCallback((paymentId: string) => {
+    setRecurringPayments(prev => prev.filter(p => p.id !== paymentId));
+  }, [setRecurringPayments]);
+
 
   const resetData = useCallback(() => {
       setTransactions([]);
       setBudgets(DEFAULT_BUDGETS);
-    }, [setTransactions, setBudgets]
+      setRecurringPayments([]);
+    }, [setTransactions, setBudgets, setRecurringPayments]
   );
   
   // Recalculate budget spent amounts whenever transactions change
@@ -107,12 +119,15 @@ export const useZenStore = () => {
     budgets, 
     categories,
     categoryIcons,
+    recurringPayments,
     addTransaction,
     updateTransaction,
     deleteTransaction,
     addCategory,
     deleteCategory,
     updateBudgetLimit, 
+    addRecurringPayment,
+    deleteRecurringPayment,
     resetData, 
     isInitialized 
   };
