@@ -22,7 +22,7 @@ export type ExtractTransactionDetailsInput = z.infer<
 
 const ExtractTransactionDetailsOutputSchema = z.object({
   amount: z.number().describe('The transaction amount in dollars.'),
-  description: z.string().describe('A short description of the transaction.'),
+  description: z.string().describe('A concise, summarized title for the transaction (e.g., "Coffee with friends").'),
   category: z.string().describe('The category of the transaction.'),
   icon: z.string().describe('An emoji or icon representing the category.'),
 });
@@ -40,7 +40,7 @@ const prompt = ai.definePrompt({
   name: 'extractTransactionDetailsPrompt',
   input: {schema: ExtractTransactionDetailsInputSchema},
   output: {schema: ExtractTransactionDetailsOutputSchema},
-  prompt: `Extract the amount, description, category, and an appropriate icon for the transaction from the following text.\n\nText: {{{transactionText}}}\n\nOutput the data as a JSON object. The amount should be a number, and the icon should be an emoji.\nEnsure that the amount is in dollars, and the description clearly explains the expense.\nThe category must be from the following list: Food & Drink, Transportation, Entertainment, Essentials, Shopping, Misc.\nExample: { \"amount\": 7, \"description\": \"Coffee from Tim Hortons\", \"category\": \"Food & Drink\", \"icon\": \"☕\" }`,
+  prompt: `Extract the amount, create a concise title for the description, determine the category, and find an appropriate icon for the transaction from the following text.\n\nText: {{{transactionText}}}\n\nOutput the data as a JSON object. The amount should be a number, and the icon should be an emoji.\nThe description should be a short, clean title for the transaction, not the full text.\nThe category must be from the following list: Food & Drink, Transportation, Entertainment, Essentials, Shopping, Misc.\nExample for input "I bought a grande latte at Starbucks with my friend": { "amount": 7, "description": "Coffee at Starbucks", "category": "Food & Drink", "icon": "☕" }`,
 });
 
 const extractTransactionDetailsFlow = ai.defineFlow(

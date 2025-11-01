@@ -101,7 +101,7 @@ export default function HomePage() {
   }[step];
   
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-4 md:p-8">
+    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-8rem)] md:min-h-screen p-4 md:p-8">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center">
           <h1 className="text-4xl md:text-5xl font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
@@ -113,7 +113,7 @@ export default function HomePage() {
         </div>
         
         <Card className="shadow-2xl shadow-primary/10 overflow-hidden">
-          <CardContent className="p-6">
+          <CardContent className="p-6 flex items-center justify-center">
             <AnimatePresence mode="wait">
               <motion.div
                 key={step}
@@ -121,6 +121,7 @@ export default function HomePage() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -50 }}
                 transition={{ duration: 0.3, ease: "easeInOut" }}
+                className="w-full"
               >
                 {step === "amount" && (
                   <Numpad onConfirm={handleAmountSubmit} />
