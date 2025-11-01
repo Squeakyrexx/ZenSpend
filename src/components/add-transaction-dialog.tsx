@@ -87,7 +87,7 @@ export function AddTransactionView({ onComplete }: { onComplete: () => void }) {
     setAmount(0);
     setDescription("");
     setLastTransaction(null);
-    if(closeDialog) {
+    if(closeDialog && onComplete) {
         onComplete();
     }
   };
