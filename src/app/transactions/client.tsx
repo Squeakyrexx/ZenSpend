@@ -29,13 +29,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowUpDown, Pencil, Trash2, Plus } from "lucide-react";
+import { ArrowUpDown, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Transaction } from "@/lib/types";
 import { NumpadDialog } from "@/components/ui/numpad-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Icon } from "@/lib/icons.tsx";
-import { AddTransactionDialog } from "@/components/add-transaction-dialog";
 
 
 type SortKey = "description" | "category" | "amount" | "date";
@@ -48,7 +47,6 @@ export function TransactionsClient() {
   );
   const [editingTransaction, setEditingTransaction] = React.useState<Transaction | null>(null);
   const [deletingTransaction, setDeletingTransaction] = React.useState<Transaction | null>(null);
-  const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
 
   const { toast } = useToast();
 
@@ -220,17 +218,6 @@ export function TransactionsClient() {
         </CardContent>
       </Card>
       
-      <Button
-        className="fixed bottom-20 right-6 md:bottom-8 md:right-8 h-16 w-16 rounded-full shadow-lg"
-        size="icon"
-        onClick={() => setIsAddDialogOpen(true)}
-      >
-        <Plus className="h-8 w-8" />
-        <span className="sr-only">Add Transaction</span>
-      </Button>
-
-      <AddTransactionDialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen} />
-
       {editingTransaction && (
          <NumpadDialog
             open={!!editingTransaction}
