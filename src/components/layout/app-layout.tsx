@@ -14,15 +14,15 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider open={isSidebarOpen} onOpenChange={setSidebarOpen}>
-      <div className="flex min-h-screen">
+      <div className="min-h-screen md:flex">
         {!isMobile && (
           <Sidebar collapsible="icon">
             <MainNav />
           </Sidebar>
         )}
-        <SidebarInset className="flex-1">
+        <main className="flex-1">
           {children}
-        </SidebarInset>
+        </main>
         {isMobile && <MobileNav />}
       </div>
     </SidebarProvider>

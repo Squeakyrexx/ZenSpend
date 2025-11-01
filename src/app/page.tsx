@@ -8,9 +8,6 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
@@ -101,7 +98,7 @@ export default function HomePage() {
   }[step];
   
   return (
-    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-8rem)] md:min-h-screen p-4 md:p-8">
+    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-8rem)] md:min-h-[calc(100vh-4rem)] p-4">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center">
           <h1 className="text-4xl md:text-5xl font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
@@ -113,7 +110,7 @@ export default function HomePage() {
         </div>
         
         <Card className="shadow-2xl shadow-primary/10 overflow-hidden">
-          <CardContent className="p-6 flex items-center justify-center">
+          <CardContent className="p-6">
             <AnimatePresence mode="wait">
               <motion.div
                 key={step}
@@ -159,19 +156,16 @@ export default function HomePage() {
         
         {lastTransaction && (
            <Card className="bg-secondary/50 animate-in fade-in-50 slide-in-from-bottom-5">
-             <CardHeader>
-               <CardTitle className="flex items-center gap-4">
-                 <span className="text-3xl">{lastTransaction.icon}</span>
-                 <span>Transaction Added</span>
-               </CardTitle>
-             </CardHeader>
-             <CardContent>
+             <CardContent className="p-4">
                <div className="flex justify-between items-center">
-                 <div>
-                   <p className="font-semibold">{lastTransaction.description}</p>
-                   <p className="text-sm text-muted-foreground">{lastTransaction.category}</p>
+                 <div className="flex items-center gap-4">
+                    <span className="text-2xl">{lastTransaction.icon}</span>
+                    <div>
+                        <p className="font-semibold">{lastTransaction.description}</p>
+                        <p className="text-sm text-muted-foreground">{lastTransaction.category}</p>
+                    </div>
                  </div>
-                 <p className="text-2xl font-bold">
+                 <p className="text-xl font-bold">
                    ${lastTransaction.amount.toFixed(2)}
                  </p>
                </div>
