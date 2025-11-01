@@ -101,7 +101,7 @@ export default function HomePage() {
   }[step];
   
   return (
-    <div className="flex flex-col items-center justify-center min-h-full p-4 md:p-8">
+    <div className="flex flex-col items-center justify-center min-h-screen p-4 md:p-8">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center">
           <h1 className="text-4xl md:text-5xl font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
