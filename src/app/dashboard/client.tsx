@@ -1,137 +1,353 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { useZenStore } from "@/hooks/use-zen-store";
+import * as React from 'react';
+import { useZenStore } from '@/hooks/use-zen-store';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Icon } from "@/lib/icons.tsx";
-import { Badge } from "@/components/ui/badge";
-import { format, differenceInDays, isPast, addMonths } from "date-fns";
+} from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Icon } from '@/lib/icons.tsx';
+import { format, differenceInDays, isPast, addMonths } from 'date-fns';
+import {
+  Bar,
+  BarChart,
+  ResponsiveContainer,
+  XAxis,
+  YAxis,
+} from 'recharts';
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from '@/components/ui/chart';
+import type { ChartConfig } from '@/components/ui/chart';
+import { Button } from '@/components/ui/button';
+import { getInsights } from '../actions';
+import { Loader2, Sparkles } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { cn } from '@/lib/utils';
+import Link from 'next/link';
+
+const chartConfig = {
+  total: {
+    label: 'Total',
+    color: 'hsl(var(--chart-1))',
+  },
+} satisfies ChartConfig;
 
 export function DashboardClient() {
-  const { transactions, recurringPayments, isInitialized, categoryIcons } = useZenStore();
+  const { transactions, recurringPayments, budgets, isInitialized, categoryIcons } =
+    useZenStore();
+  const [insights, setInsights] = React.useState<string[]>([]);
+  const [isLoading, setIsLoading] = React.useState(false);
+
+  const handleGenerateInsights = async () => {
+    setIsLoading(true);
+    setInsights([]);
+    const result = await getInsights(transactions);
+    if (result && !('error' in result)) {
+      setInsights(result.insights);
+    }
+    setIsLoading(false);
+  };
 
   const recentTransactions = React.useMemo(() => {
     return [...transactions]
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
       .slice(0, 5);
   }, [transactions]);
-  
+
   const upcomingPayments = React.useMemo(() => {
     const today = new Date();
     return recurringPayments
-      .map(p => {
-        const thisMonthDueDate = new Date(today.getFullYear(), today.getMonth(), p.dayOfMonth);
+      .map((p) => {
+        const thisMonthDueDate = new Date(
+          today.getFullYear(),
+          today.getMonth(),
+          p.dayOfMonth
+        );
         const nextMonthDueDate = addMonths(thisMonthDueDate, 1);
-        const dueDate = isPast(thisMonthDueDate) ? nextMonthDueDate : thisMonthDueDate;
+        const dueDate = isPast(thisMonthDueDate)
+          ? nextMonthDueDate
+          : thisMonthDueDate;
         const daysUntilDue = differenceInDays(dueDate, today);
         return { ...p, dueDate, daysUntilDue };
       })
-      .filter(p => p.daysUntilDue >= 0)
+      .filter((p) => p.daysUntilDue >= 0)
       .sort((a, b) => a.daysUntilDue - b.daysUntilDue)
-      .slice(0, 5);
+      .slice(0, 3);
   }, [recurringPayments]);
+
+  const topBudgets = React.useMemo(() => {
+    return [...budgets]
+        .sort((a,b) => (b.spent / b.limit) - (a.spent / a.limit))
+        .slice(0, 4);
+  }, [budgets]);
+
+  const spendingByCategory = React.useMemo(() => {
+    const categoryMap: { [key: string]: number } = {};
+    transactions.forEach((t) => {
+      categoryMap[t.category] = (categoryMap[t.category] || 0) + t.amount;
+    });
+    return Object.entries(categoryMap)
+      .map(([name, total]) => ({ name, total }))
+      .sort((a, b) => b.total - a.total);
+  }, [transactions]);
+  
+  const getProgressColor = (progress: number) => {
+    if (progress > 100) return "bg-red-500";
+    if (progress >= 80) return "bg-yellow-500";
+    return "bg-primary";
+  }
 
 
   if (!isInitialized) {
     return (
-       <div className="p-4 md:p-8 space-y-6">
+      <div className="p-4 md:p-8 space-y-6">
         <Card>
           <CardHeader>
-             <Skeleton className="h-8 w-1/3" />
-             <Skeleton className="h-4 w-2/3" />
+            <Skeleton className="h-8 w-1/3" />
+            <Skeleton className="h-4 w-2/3" />
           </CardHeader>
         </Card>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+             <Skeleton className="h-48 w-full" />
+             <Skeleton className="h-48 w-full" />
+             <Skeleton className="h-48 w-full" />
+        </div>
         <div className="grid gap-6 md:grid-cols-2">
-            <div>
-                 <Skeleton className="h-8 w-1/2 mb-4" />
-                <div className="space-y-2">
-                    {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}
-                </div>
-            </div>
-             <div>
-                 <Skeleton className="h-8 w-1/2 mb-4" />
-                <div className="space-y-2">
-                    {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}
-                </div>
-            </div>
+          <Skeleton className="h-64 w-full" />
+          <Skeleton className="h-64 w-full" />
         </div>
       </div>
-    )
+    );
   }
 
   return (
     <div className="p-4 md:p-8 space-y-6">
-        <Card>
-            <CardHeader>
-                <CardTitle className="text-4xl">Welcome Back!</CardTitle>
-                <CardDescription>Here's a quick overview of your financial world.</CardDescription>
-            </CardHeader>
-        </Card>
-        <div className="grid gap-8 md:grid-cols-2">
-            <div className="space-y-4">
-                <h2 className="text-2xl font-bold">Upcoming Payments</h2>
-                 {upcomingPayments.length > 0 ? (
-                    <Card>
-                        <CardContent className="p-4 space-y-3">
-                            {upcomingPayments.map(p => (
-                                <div key={p.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-secondary">
-                                    <div className="flex items-center gap-3">
-                                        <Icon name={p.icon} className="h-6 w-6 text-muted-foreground" />
-                                        <div>
-                                            <p className="font-semibold">{p.description}</p>
-                                            <p className="text-sm text-muted-foreground">${p.amount.toFixed(2)}</p>
-                                        </div>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="font-semibold">{p.daysUntilDue === 0 ? "Today" : `${p.daysUntilDue} day${p.daysUntilDue > 1 ? 's' : ''}`}</p>
-                                        <p className="text-sm text-muted-foreground">{format(p.dueDate, "MMM do")}</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </CardContent>
-                    </Card>
-                 ) : (
-                    <Card className="flex items-center justify-center py-10">
-                        <p className="text-muted-foreground">No upcoming payments found.</p>
-                    </Card>
-                 )}
-            </div>
-             <div className="space-y-4">
-                <h2 className="text-2xl font-bold">Recent Transactions</h2>
-                 {recentTransactions.length > 0 ? (
-                    <Card>
-                        <CardContent className="p-4 space-y-3">
-                            {recentTransactions.map(t => (
-                                <div key={t.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-secondary">
-                                    <div className="flex items-center gap-3">
-                                        <Icon name={categoryIcons[t.category] || t.icon} className="h-6 w-6 text-muted-foreground" />
-                                        <div>
-                                            <p className="font-semibold">{t.description}</p>
-                                            <p className="text-sm text-muted-foreground">{t.category}</p>
-                                        </div>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="font-bold text-lg">${t.amount.toFixed(2)}</p>
-                                        <p className="text-sm text-muted-foreground">{format(new Date(t.date), "MMM d")}</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </CardContent>
-                    </Card>
-                 ) : (
-                     <Card className="flex items-center justify-center py-10">
-                        <p className="text-muted-foreground">No recent transactions to show.</p>
-                    </Card>
-                 )}
-            </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-4xl">Welcome Back!</CardTitle>
+          <CardDescription>
+            Here's a quick overview of your financial world.
+          </CardDescription>
+        </CardHeader>
+      </Card>
+      
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        {topBudgets.map(budget => {
+            const progress = budget.limit > 0 ? (budget.spent / budget.limit) * 100 : 0;
+            return (
+                <Card key={budget.category} className="hover:border-primary/50 transition-colors">
+                     <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-xl">
+                            <Icon name={budget.icon} className="h-6 w-6" />
+                            {budget.category}
+                        </CardTitle>
+                     </CardHeader>
+                    <CardContent>
+                         <div className="flex justify-between items-baseline mb-1">
+                            <span className="font-bold text-lg">${budget.spent.toFixed(2)}</span>
+                            <span className="text-sm text-muted-foreground">
+                                of ${budget.limit.toFixed(2)}
+                            </span>
+                        </div>
+                        <Progress 
+                            value={progress > 100 ? 100 : progress} 
+                            className="h-2"
+                            indicatorClassName={getProgressColor(progress)}
+                        />
+                         <p className={cn(
+                            "text-right text-xs mt-1 font-medium",
+                            budget.spent > budget.limit && "text-red-500"
+                        )}>
+                        {budget.spent > budget.limit 
+                            ? `$${(budget.spent - budget.limit).toFixed(2)} over` 
+                            : `$${(budget.limit - budget.spent).toFixed(2)} remaining`
+                        }
+                        </p>
+                    </CardContent>
+                </Card>
+            )
+        })}
+      </div>
+
+      <div className="grid gap-8 md:grid-cols-5">
+        <div className="md:col-span-3 space-y-4">
+            <h2 className="text-2xl font-bold">Spending Breakdown</h2>
+            <Card>
+                <CardContent className="p-4">
+                     {transactions.length > 0 ? (
+                        <ChartContainer config={chartConfig} className="min-h-[250px] w-full">
+                            <BarChart accessibilityLayer data={spendingByCategory}>
+                                <XAxis
+                                dataKey="name"
+                                stroke="hsl(var(--muted-foreground))"
+                                fontSize={12}
+                                tickLine={false}
+                                axisLine={false}
+                                interval={0}
+                                />
+                                <YAxis
+                                stroke="hsl(var(--muted-foreground))"
+                                fontSize={12}
+                                tickLine={false}
+                                axisLine={false}
+                                tickFormatter={(value) => `$${value}`}
+                                />
+                                <ChartTooltip 
+                                    cursor={false}
+                                    content={<ChartTooltipContent />} 
+                                />
+                                <Bar dataKey="total" fill="var(--color-total)" radius={4} />
+                            </BarChart>
+                        </ChartContainer>
+                    ) : (
+                        <div className="text-center py-12">
+                        <p className="text-lg font-semibold">No chart data.</p>
+                        <p className="text-muted-foreground">
+                            Add some transactions to see your spending breakdown.
+                        </p>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
         </div>
+        <div className="md:col-span-2 space-y-4">
+             <h2 className="text-2xl font-bold">AI Insights</h2>
+             <Card>
+                <CardContent className="p-4">
+                     <Button onClick={handleGenerateInsights} disabled={isLoading || transactions.length === 0} className="w-full">
+                        {isLoading ? (
+                        <Loader2 className="animate-spin" />
+                        ) : (
+                        <>
+                            <Sparkles className="mr-2 h-4 w-4" /> Generate Insights
+                        </>
+                        )}
+                    </Button>
+
+                    {insights.length > 0 && (
+                        <div className="mt-4 space-y-2">
+                        {insights.map((insight, index) => (
+                            <div key={index} className="flex items-start gap-3 p-3 bg-secondary/50 rounded-lg text-sm">
+                                <Sparkles className="h-4 w-4 text-primary mt-1 flex-shrink-0"/>
+                                <p>{insight}</p>
+                            </div>
+                        ))}
+                        </div>
+                    )}
+                     {transactions.length > 0 && insights.length === 0 && !isLoading && (
+                         <div className="text-center py-8">
+                            <p className="text-muted-foreground">Click the button to get AI-powered insights.</p>
+                         </div>
+                     )}
+                     {transactions.length === 0 && (
+                          <div className="text-center py-8">
+                            <p className="text-muted-foreground">Add some transactions to generate insights.</p>
+                         </div>
+                     )}
+                </CardContent>
+             </Card>
+        </div>
+      </div>
+
+      <div className="grid gap-8 md:grid-cols-2">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold">Upcoming Payments</h2>
+            <Button variant="link" asChild><Link href="/recurring">View All</Link></Button>
+          </div>
+          {upcomingPayments.length > 0 ? (
+            <Card>
+              <CardContent className="p-4 space-y-3">
+                {upcomingPayments.map((p) => (
+                  <div
+                    key={p.id}
+                    className="flex items-center justify-between p-3 rounded-lg hover:bg-secondary"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Icon
+                        name={p.icon}
+                        className="h-6 w-6 text-muted-foreground"
+                      />
+                      <div>
+                        <p className="font-semibold">{p.description}</p>
+                        <p className="text-sm text-muted-foreground">
+                          ${p.amount.toFixed(2)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold">
+                        {p.daysUntilDue === 0
+                          ? 'Today'
+                          : `${p.daysUntilDue} day${p.daysUntilDue > 1 ? 's' : ''}`}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {format(p.dueDate, 'MMM do')}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="flex items-center justify-center py-10">
+              <p className="text-muted-foreground">
+                No upcoming payments found.
+              </p>
+            </Card>
+          )}
+        </div>
+        <div className="space-y-4">
+           <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold">Recent Transactions</h2>
+                <Button variant="link" asChild><Link href="/transactions">View All</Link></Button>
+           </div>
+          {recentTransactions.length > 0 ? (
+            <Card>
+              <CardContent className="p-4 space-y-3">
+                {recentTransactions.map((t) => (
+                  <div
+                    key={t.id}
+                    className="flex items-center justify-between p-3 rounded-lg hover:bg-secondary"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Icon
+                        name={categoryIcons[t.category] || t.icon}
+                        className="h-6 w-6 text-muted-foreground"
+                      />
+                      <div>
+                        <p className="font-semibold">{t.description}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {t.category}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-lg">${t.amount.toFixed(2)}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {format(new Date(t.date), 'MMM d')}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="flex items-center justify-center py-10">
+              <p className="text-muted-foreground">
+                No recent transactions to show.
+              </p>
+            </Card>
+          )}
+        </div>
+      </div>
     </div>
-  )
+  );
 }
