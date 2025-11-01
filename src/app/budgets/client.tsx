@@ -29,6 +29,7 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 function BudgetCard({
   budget,
@@ -113,6 +114,11 @@ function BudgetCard({
   );
 }
 
+const COMMON_ICONS = [
+    '✈️', '🎨', '🚌', '☕️', '🖥️', '🎉', '💪', '🛒', '🎁', '❤️', '🏠', '🎵',
+    '🐾', '📱', '🧾', '💰', '👕', '💊', '🎓', '💼'
+];
+
 function AddCategoryDialog({
     open,
     onOpenChange,
@@ -123,7 +129,7 @@ function AddCategoryDialog({
     onAddCategory: (name: string, icon: string, limit: number) => void;
 }) {
     const [name, setName] = React.useState("");
-    const [icon, setIcon] = React.useState("");
+    const [selectedIcon, setSelectedIcon] = React.useState("");
     const [limit, setLimit] = React.useState(0);
     const [isNumpadOpen, setIsNumpadOpen] = React.useState(false);
     const { toast } = useToast();
@@ -142,18 +148,18 @@ function AddCategoryDialog({
     };
 
     const handleSubmit = () => {
-        if (!name.trim() || !icon.trim() || limit <= 0) {
+        if (!name.trim() || !selectedIcon || limit <= 0) {
             toast({
                 variant: "destructive",
                 title: "Missing Information",
-                description: "Please fill out all fields with a valid budget limit.",
+                description: "Please provide a name, select an icon, and set a budget limit.",
             });
             return;
         }
-        onAddCategory(name, icon, limit);
+        onAddCategory(name, selectedIcon, limit);
         onOpenChange(false);
         setName("");
-        setIcon("");
+        setSelectedIcon("");
         setLimit(0);
     };
 
@@ -173,8 +179,24 @@ function AddCategoryDialog({
                             <Input id="category-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Hobbies" />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="category-icon">Icon (Emoji)</Label>
-                            <Input id="category-icon" value={icon} onChange={(e) => setIcon(e.target.value)} placeholder="e.g. 🎨" maxLength={2} />
+                            <Label>Icon</Label>
+                             <ScrollArea className="h-32 w-full rounded-md border p-2">
+                                <div className="grid grid-cols-6 gap-2">
+                                    {COMMON_ICONS.map((icon) => (
+                                        <Button
+                                            key={icon}
+                                            variant="outline"
+                                            className={cn(
+                                                "text-2xl p-2 h-14 w-14",
+                                                selectedIcon === icon && "ring-2 ring-primary border-primary"
+                                            )}
+                                            onClick={() => setSelectedIcon(icon)}
+                                        >
+                                            {icon}
+                                        </Button>
+                                    ))}
+                                </div>
+                            </ScrollArea>
                         </div>
                         <div className="space-y-2">
                             <Label>Budget Limit</Label>
