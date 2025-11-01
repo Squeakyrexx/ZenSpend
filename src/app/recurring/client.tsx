@@ -46,13 +46,19 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { PlusCircle, Trash2 } from "lucide-react";
+import { CalendarIcon, PlusCircle, Trash2 } from "lucide-react";
 import { Icon } from "@/lib/icons.tsx";
+import { NumpadDialog } from "@/components/ui/numpad-dialog";
+import { Calendar } from "@/components/ui/calendar";
+import { format, getDate } from "date-fns";
+import { cn } from "@/lib/utils";
+
 
 function AddRecurringPaymentDialog({
   open,
@@ -65,118 +71,149 @@ function AddRecurringPaymentDialog({
 }) {
   const { categories, categoryIcons } = useZenStore();
   const [description, setDescription] = React.useState("");
-  const [amount, setAmount] = React.useState("");
+  const [amount, setAmount] = React.useState(0);
   const [category, setCategory] = React.useState<Category | "">("");
-  const [dayOfMonth, setDayOfMonth] = React.useState("");
+  const [date, setDate] = React.useState<Date | undefined>(undefined);
+  const [isNumpadOpen, setIsNumpadOpen] = React.useState(false);
+
   const { toast } = useToast();
 
-  const handleSubmit = () => {
-    const parsedAmount = parseFloat(amount);
-    const parsedDay = parseInt(dayOfMonth, 10);
+  const handleAmountConfirm = (value: number) => {
+    if (value > 0) {
+        setAmount(value);
+    } else {
+        toast({
+            variant: "destructive",
+            title: "Invalid Amount",
+            description: "Please enter an amount greater than zero.",
+        });
+    }
+    setIsNumpadOpen(false);
+  }
 
+  const handleSubmit = () => {
+    const dayOfMonth = date ? getDate(date) : undefined;
+    
     if (
       !description.trim() ||
-      isNaN(parsedAmount) ||
-      parsedAmount <= 0 ||
+      !amount ||
+      amount <= 0 ||
       !category ||
-      isNaN(parsedDay) ||
-      parsedDay < 1 ||
-      parsedDay > 31
+      !dayOfMonth
     ) {
       toast({
         variant: "destructive",
         title: "Invalid Information",
         description:
-          "Please fill out all fields correctly. Day must be between 1 and 31.",
+          "Please fill out all fields correctly.",
       });
       return;
     }
 
     onAddPayment({
       description,
-      amount: parsedAmount,
+      amount: amount,
       category,
       icon: categoryIcons[category] || "Landmark",
-      dayOfMonth: parsedDay,
+      dayOfMonth: dayOfMonth,
     });
 
     onOpenChange(false);
     setDescription("");
-    setAmount("");
+    setAmount(0);
     setCategory("");
-    setDayOfMonth("");
+    setDate(undefined);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Add Recurring Payment</DialogTitle>
-          <DialogDescription>
-            Add a bill or subscription that occurs regularly.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Input
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="e.g. Netflix, Rent"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Recurring Payment</DialogTitle>
+            <DialogDescription>
+              Add a bill or subscription that occurs regularly.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="amount">Amount</Label>
+              <Label htmlFor="description">Description</Label>
               <Input
-                id="amount"
-                type="number"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="15.99"
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="e.g. Netflix, Rent"
               />
             </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="amount">Amount</Label>
+                 <Button variant="outline" className="w-full justify-start font-normal" onClick={() => setIsNumpadOpen(true)}>
+                    {amount > 0 ? `$${amount.toFixed(2)}` : "Set Amount"}
+                </Button>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="day">Day of Month</Label>
+                <Popover>
+                    <PopoverTrigger asChild>
+                        <Button
+                        variant={"outline"}
+                        className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !date && "text-muted-foreground"
+                        )}
+                        >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {date ? format(date, "do") : <span>Pick a day</span>}
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                        <Calendar
+                        mode="single"
+                        selected={date}
+                        onSelect={setDate}
+                        initialFocus
+                        />
+                    </PopoverContent>
+                </Popover>
+              </div>
+            </div>
             <div className="space-y-2">
-              <Label htmlFor="day">Day of Month</Label>
-              <Input
-                id="day"
-                type="number"
-                value={dayOfMonth}
-                onChange={(e) => setDayOfMonth(e.target.value)}
-                placeholder="e.g. 15"
-                min="1"
-                max="31"
-              />
+              <Label htmlFor="category">Category</Label>
+              <Select onValueChange={(value) => setCategory(value)} value={category}>
+                <SelectTrigger id="category">
+                  <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat} value={cat}>
+                      <div className="flex items-center gap-2">
+                         <Icon name={categoryIcons[cat] || 'Landmark'} className="h-4 w-4" />
+                         {cat}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="category">Category</Label>
-            <Select onValueChange={(value) => setCategory(value)} value={category}>
-              <SelectTrigger id="category">
-                <SelectValue placeholder="Select a category" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((cat) => (
-                  <SelectItem key={cat} value={cat}>
-                    <div className="flex items-center gap-2">
-                       <Icon name={categoryIcons[cat] || 'Landmark'} className="h-4 w-4" />
-                       {cat}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button variant="outline">Cancel</Button>
-          </DialogClose>
-          <Button onClick={handleSubmit}>Add Payment</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button onClick={handleSubmit}>Add Payment</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <NumpadDialog
+        open={isNumpadOpen}
+        onOpenChange={setIsNumpadOpen}
+        onConfirm={handleAmountConfirm}
+        initialValue={amount}
+        title="Set Recurring Payment Amount"
+        description="Enter the fixed amount for this recurring payment."
+      />
+    </>
   );
 }
 
@@ -311,3 +348,5 @@ export function RecurringPaymentsClient() {
     </div>
   );
 }
+
+    
