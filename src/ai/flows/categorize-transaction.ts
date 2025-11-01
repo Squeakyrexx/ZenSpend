@@ -10,6 +10,8 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { CATEGORY_ICONS } from '@/lib/data';
+import { ICONS, IconName } from '@/lib/icons';
 
 const CategorySchema = z.enum([
   'Food & Drink',
@@ -31,7 +33,7 @@ const CategorizeTransactionOutputSchema = z.object({
   amount: z.number().describe('The amount of the transaction.'),
   description: z.string().describe('A short description of the transaction.'),
   category: CategorySchema.describe('The category of the transaction.'),
-  icon: z.string().describe('An emoji or icon representing the category.'),
+  icon: z.enum(ICONS).describe('A lucide-react icon name representing the category.'),
 });
 export type CategorizeTransactionOutput = z.infer<typeof CategorizeTransactionOutputSchema>;
 
@@ -49,18 +51,11 @@ const prompt = ai.definePrompt({
 
 Transaction Text: {{{transactionText}}}
 
+The icon must be one of the following from this list of lucide-react icon names: ${ICONS.join(", ")}.
+
 Respond in JSON format.
 `,
 });
-
-const categoryIcons: {[key in CategorySchema]: string} = {
-  'Food & Drink': '🍔',
-  Transportation: '🚗',
-  Entertainment: '🎬',
-  Essentials: '🏠',
-  Shopping: '🛍️',
-  Misc: '💡',
-};
 
 const categorizeTransactionFlow = ai.defineFlow(
   {
@@ -70,11 +65,8 @@ const categorizeTransactionFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await prompt(input);
-
-    // Assign icon based on the predicted category
-    const category = output!.category as keyof typeof categoryIcons;
-    output!.icon = categoryIcons[category];
-
+    const category = output!.category as keyof typeof CATEGORY_ICONS;
+    output!.icon = CATEGORY_ICONS[category] || 'Landmark';
     return output!;
   }
 );

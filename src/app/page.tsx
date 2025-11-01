@@ -16,6 +16,7 @@ import { useZenStore } from "@/hooks/use-zen-store";
 import type { Transaction } from "@/lib/types";
 import { parseTransactionDescription } from "./actions";
 import { Numpad } from "@/components/ui/numpad";
+import { Icon } from "@/lib/icons";
 
 type Step = "amount" | "description" | "loading" | "done";
 
@@ -179,7 +180,7 @@ export default function HomePage() {
              <CardContent className="p-4">
                <div className="flex justify-between items-center">
                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">{lastTransaction.icon}</span>
+                    <Icon name={lastTransaction.icon} className="h-6 w-6" />
                     <div>
                         <p className="font-semibold">{lastTransaction.description}</p>
                         <p className="text-sm text-muted-foreground">{lastTransaction.category} &bull; ${lastTransaction.amount.toFixed(2)}</p>

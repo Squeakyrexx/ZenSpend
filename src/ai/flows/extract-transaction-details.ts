@@ -10,6 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { ICONS } from '@/lib/icons';
 
 const ExtractTransactionDetailsInputSchema = z.object({
   transactionText: z
@@ -25,7 +26,7 @@ const ExtractTransactionDetailsOutputSchema = z.object({
   amount: z.number().describe('The transaction amount in dollars.'),
   description: z.string().describe('A concise, summarized title for the transaction (e.g., "Coffee with friends").'),
   category: z.string().describe('The category of the transaction.'),
-  icon: z.string().describe('An emoji or icon representing the category.'),
+  icon: z.enum(ICONS).describe('A relevant icon name from the provided list.'),
 });
 export type ExtractTransactionDetailsOutput = z.infer<
   typeof ExtractTransactionDetailsOutputSchema
@@ -47,10 +48,12 @@ Text: {{{transactionText}}}
 
 The category must be one of the following: {{#each categories}}"{{this}}"{{#unless @last}}, {{/unless}}{{/each}}.
 
-Output the data as a JSON object. The amount should be a number, and the icon should be an emoji.
+The icon must be one of the following from this list of lucide-react icon names: ${ICONS.join(", ")}.
+
+Output the data as a JSON object. The amount should be a number.
 The description should be a short, clean title for the transaction, not the full text.
 
-Example for input "I bought a grande latte at Starbucks with my friend": { "amount": 7, "description": "Coffee at Starbucks", "category": "Food & Drink", "icon": "☕" }`,
+Example for input "I bought a grande latte at Starbucks with my friend": { "amount": 7, "description": "Coffee at Starbucks", "category": "Food & Drink", "icon": "Coffee" }`,
 });
 
 const extractTransactionDetailsFlow = ai.defineFlow(

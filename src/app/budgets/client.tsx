@@ -30,6 +30,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { ICONS, Icon } from "@/lib/icons";
 
 function BudgetCard({
   budget,
@@ -70,7 +71,7 @@ function BudgetCard({
       <Card className="hover:border-primary/50 transition-colors">
         <CardHeader>
           <CardTitle className="flex items-center gap-3">
-            <span className="text-2xl">{budget.icon}</span>
+            <Icon name={budget.icon} className="h-8 w-8" />
             {budget.category}
           </CardTitle>
         </CardHeader>
@@ -114,11 +115,6 @@ function BudgetCard({
   );
 }
 
-const COMMON_ICONS = [
-    '✈️', '🎨', '🚌', '☕️', '🖥️', '🎉', '💪', '🛒', '🎁', '❤️', '🏠', '🎵',
-    '🐾', '📱', '🧾', '💰', '👕', '💊', '🎓', '💼'
-];
-
 function AddCategoryDialog({
     open,
     onOpenChange,
@@ -129,7 +125,7 @@ function AddCategoryDialog({
     onAddCategory: (name: string, icon: string, limit: number) => void;
 }) {
     const [name, setName] = React.useState("");
-    const [selectedIcon, setSelectedIcon] = React.useState("");
+    const [selectedIcon, setSelectedIcon] = React.useState<string | null>(null);
     const [limit, setLimit] = React.useState(0);
     const [isNumpadOpen, setIsNumpadOpen] = React.useState(false);
     const { toast } = useToast();
@@ -159,7 +155,7 @@ function AddCategoryDialog({
         onAddCategory(name, selectedIcon, limit);
         onOpenChange(false);
         setName("");
-        setSelectedIcon("");
+        setSelectedIcon(null);
         setLimit(0);
     };
 
@@ -182,17 +178,17 @@ function AddCategoryDialog({
                             <Label>Icon</Label>
                              <ScrollArea className="h-32 w-full rounded-md border p-2">
                                 <div className="grid grid-cols-6 gap-2">
-                                    {COMMON_ICONS.map((icon) => (
+                                    {ICONS.map((icon) => (
                                         <Button
                                             key={icon}
                                             variant="outline"
                                             className={cn(
-                                                "text-2xl p-2 h-14 w-14",
+                                                "p-2 h-14 w-14 flex items-center justify-center",
                                                 selectedIcon === icon && "ring-2 ring-primary border-primary"
                                             )}
                                             onClick={() => setSelectedIcon(icon)}
                                         >
-                                            {icon}
+                                            <Icon name={icon} className="h-6 w-6"/>
                                         </Button>
                                     ))}
                                 </div>

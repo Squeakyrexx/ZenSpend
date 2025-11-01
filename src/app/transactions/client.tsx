@@ -34,6 +34,7 @@ import { Button } from "@/components/ui/button";
 import { Transaction } from "@/lib/types";
 import { NumpadDialog } from "@/components/ui/numpad-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { Icon } from "@/lib/icons";
 
 
 type SortKey = "description" | "category" | "amount" | "date";
@@ -185,7 +186,9 @@ export function TransactionsClient() {
               <TableBody>
                 {sortedTransactions.map((t) => (
                   <TableRow key={t.id}>
-                    <TableCell className="text-xl">{categoryIcons[t.category] || t.icon}</TableCell>
+                    <TableCell>
+                      <Icon name={categoryIcons[t.category] || t.icon} className="h-5 w-5" />
+                    </TableCell>
                     <TableCell className="font-medium">
                       {t.description}
                     </TableCell>
