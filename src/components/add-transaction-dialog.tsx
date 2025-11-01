@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -205,6 +206,9 @@ export function AddTransactionDialog({ open, onOpenChange }: { open: boolean, on
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="w-screen h-screen max-w-full max-h-full sm:max-w-md sm:max-h-[90vh] sm:rounded-lg p-0 bg-background flex flex-col">
+                <DialogHeader className="sr-only">
+                    <DialogTitle>Add New Transaction</DialogTitle>
+                </DialogHeader>
                 <AddTransactionView onComplete={() => onOpenChange(false)} />
                  <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
                     <X className="h-6 w-6" />
