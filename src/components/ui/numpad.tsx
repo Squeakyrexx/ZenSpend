@@ -60,8 +60,8 @@ export function Numpad({ onConfirm, initialValue = "0", className }: NumpadProps
 
   return (
     <div className={cn("flex flex-col items-center space-y-4 pt-4", className)}>
-      <div className="text-6xl font-bold tracking-tighter w-full text-center p-4 rounded-lg bg-secondary/50 truncate">
-        <span className="text-3xl font-medium align-super text-muted-foreground mr-1">$</span>
+      <div className="text-7xl font-bold tracking-tighter w-full text-center p-4 rounded-lg bg-secondary/50 truncate">
+        <span className="text-4xl font-medium align-middle text-muted-foreground mr-1">$</span>
         {value}
       </div>
       <div className="grid grid-cols-3 gap-2 w-full">
@@ -69,7 +69,7 @@ export function Numpad({ onConfirm, initialValue = "0", className }: NumpadProps
           <Button
             key={key}
             variant="secondary"
-            className="h-16 text-2xl font-bold"
+            className="h-16 text-3xl font-bold"
             onClick={() => handlePress(key)}
           >
             {key}
@@ -77,7 +77,7 @@ export function Numpad({ onConfirm, initialValue = "0", className }: NumpadProps
         ))}
         <Button
             variant="secondary"
-            className="h-16 text-2xl font-bold"
+            className="h-16 text-3xl font-bold"
             onClick={() => handlePress("backspace")}
         >
             <Delete />
