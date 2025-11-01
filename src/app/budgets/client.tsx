@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { NumpadDialog } from "@/components/ui/numpad-dialog";
-import { Pencil, PlusCircle } from "lucide-react";
+import { Pencil, PlusCircle, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Dialog,
@@ -31,13 +31,26 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ICONS, Icon } from "@/lib/icons.tsx";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 function BudgetCard({
   budget,
   onUpdateLimit,
+  onDelete,
 }: {
   budget: Budget;
   onUpdateLimit: (category: Category, newLimit: number) => void;
+  onDelete: (category: Category) => void;
 }) {
   const [isNumpadOpen, setIsNumpadOpen] = React.useState(false);
   const { toast } = useToast();
@@ -68,14 +81,14 @@ function BudgetCard({
 
   return (
     <>
-      <Card className="hover:border-primary/50 transition-colors">
+      <Card className="hover:border-primary/50 transition-colors flex flex-col">
         <CardHeader>
           <CardTitle className="flex items-center gap-3">
             <Icon name={budget.icon} className="h-8 w-8" />
             {budget.category}
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 flex-grow flex flex-col justify-between">
           <div>
             <div className="flex justify-between items-baseline mb-1">
               <span className="font-bold text-lg">${budget.spent.toFixed(2)}</span>
@@ -98,9 +111,30 @@ function BudgetCard({
               }
             </p>
           </div>
-          <Button variant="outline" className="w-full" onClick={() => setIsNumpadOpen(true)}>
-             <Pencil className="mr-2 h-4 w-4" /> Edit Limit
-          </Button>
+          <div className="flex gap-2 pt-4">
+            <Button variant="outline" className="w-full" onClick={() => setIsNumpadOpen(true)}>
+                <Pencil className="mr-2 h-4 w-4" /> Edit Limit
+            </Button>
+            <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="icon">
+                        <Trash2 className="h-4 w-4"/>
+                    </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will permanently delete the "{budget.category}" category and all of its associated transactions. This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => onDelete(budget.category)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </CardContent>
       </Card>
       <NumpadDialog
@@ -224,7 +258,7 @@ function AddCategoryDialog({
 
 
 export function BudgetsClient() {
-  const { budgets, updateBudgetLimit, addCategory, isInitialized } = useZenStore();
+  const { budgets, updateBudgetLimit, addCategory, deleteCategory, isInitialized } = useZenStore();
   const [isAddCategoryOpen, setIsAddCategoryOpen] = React.useState(false);
   const { toast } = useToast();
 
@@ -246,6 +280,15 @@ export function BudgetsClient() {
           description: `The "${name}" category has been added to your budgets.`,
       });
   };
+
+  const handleDeleteCategory = (category: Category) => {
+      deleteCategory(category);
+      toast({
+          title: "Category Deleted",
+          description: `The "${category}" category and its transactions have been deleted.`,
+      });
+  };
+
 
   if (!isInitialized) {
     return (
@@ -288,9 +331,10 @@ export function BudgetsClient() {
             key={budget.category}
             budget={budget}
             onUpdateLimit={updateBudgetLimit}
+            onDelete={handleDeleteCategory}
           />
         ))}
-         <Card className="border-dashed border-2 hover:border-primary hover:text-primary transition-colors flex items-center justify-center">
+         <Card className="border-dashed border-2 hover:border-primary hover:text-primary transition-colors flex items-center justify-center min-h-[250px]">
             <CardHeader className="text-center">
                 <Button variant="ghost" className="w-full h-full text-lg" onClick={() => setIsAddCategoryOpen(true)}>
                     <PlusCircle className="mr-2 h-6 w-6"/>

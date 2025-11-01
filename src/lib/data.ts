@@ -3,7 +3,7 @@ import { CATEGORIES } from '@/lib/types';
 import type { IconName } from './icons.tsx';
 
 export const CATEGORY_ICONS: Record<Category, IconName> = {
-  'Food & Drink': 'Coffee',
+  'Food & Drink': 'Utensils',
   'Transportation': 'Car',
   'Entertainment': 'Ticket',
   'Essentials': 'Home',

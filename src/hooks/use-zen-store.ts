@@ -73,6 +73,12 @@ export const useZenStore = () => {
     setBudgets(prev => [...prev, { category, icon, limit, spent: 0}]);
   }, [setBudgets]);
 
+  const deleteCategory = useCallback((category: Category) => {
+      setBudgets(prev => prev.filter(b => b.category !== category));
+      setTransactions(prev => prev.filter(t => t.category !== category));
+    }, [setBudgets, setTransactions]
+  );
+
   const resetData = useCallback(() => {
       setTransactions([]);
       setBudgets(DEFAULT_BUDGETS);
@@ -105,6 +111,7 @@ export const useZenStore = () => {
     updateTransaction,
     deleteTransaction,
     addCategory,
+    deleteCategory,
     updateBudgetLimit, 
     resetData, 
     isInitialized 
