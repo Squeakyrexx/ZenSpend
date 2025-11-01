@@ -19,13 +19,15 @@ import { Numpad } from "@/components/ui/numpad";
 type Step = "amount" | "description" | "loading" | "done";
 
 export default function HomePage() {
-  const { addTransaction } = useZenStore();
+  const { addTransaction, deleteTransaction } = useZenStore();
   const { toast } = useToast();
   
   const [step, setStep] = React.useState<Step>("amount");
   const [amount, setAmount] = React.useState(0);
   const [description, setDescription] = React.useState("");
   const [lastTransaction, setLastTransaction] = React.useState<Transaction | null>(null);
+
+  const resetTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
   const handleAmountSubmit = (value: number) => {
     if (value > 0) {
@@ -71,18 +73,34 @@ export default function HomePage() {
       addTransaction(newTransaction);
       setLastTransaction(newTransaction);
       setStep("done");
-      setTimeout(() => {
+
+      resetTimeoutRef.current = setTimeout(() => {
         handleReset();
-      }, 3000)
+      }, 5000); // Increased timeout to 5 seconds
     }
   };
 
   const handleReset = () => {
+    if (resetTimeoutRef.current) {
+        clearTimeout(resetTimeoutRef.current);
+        resetTimeoutRef.current = null;
+    }
     setStep("amount");
     setAmount(0);
     setDescription("");
     setLastTransaction(null);
   };
+  
+  const handleUndo = () => {
+    if (lastTransaction) {
+        deleteTransaction(lastTransaction.id);
+        toast({
+            title: "Transaction Undone",
+            description: `"${lastTransaction.description}" was removed.`,
+        });
+        handleReset();
+    }
+  }
 
   const currentTitle = {
     amount: "What did you spend?",
@@ -99,7 +117,7 @@ export default function HomePage() {
   }[step];
   
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-4 min-h-full">
+    <div className="flex-1 flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center">
           <h1 className="text-4xl md:text-5xl font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
@@ -159,16 +177,17 @@ export default function HomePage() {
            <Card className="bg-secondary/50 animate-in fade-in-50 slide-in-from-bottom-5">
              <CardContent className="p-4">
                <div className="flex justify-between items-center">
-                 <div className="flex items-center gap-4">
+                 <div className="flex items-center gap-3">
                     <span className="text-2xl">{lastTransaction.icon}</span>
                     <div>
                         <p className="font-semibold">{lastTransaction.description}</p>
-                        <p className="text-sm text-muted-foreground">{lastTransaction.category}</p>
+                        <p className="text-sm text-muted-foreground">{lastTransaction.category} &bull; ${lastTransaction.amount.toFixed(2)}</p>
                     </div>
                  </div>
-                 <p className="text-xl font-bold">
-                   ${lastTransaction.amount.toFixed(2)}
-                 </p>
+                 <Button variant="ghost" size="sm" onClick={handleUndo}>
+                    <Undo2 className="mr-2 h-4 w-4"/>
+                    Undo
+                 </Button>
                </div>
              </CardContent>
            </Card>
