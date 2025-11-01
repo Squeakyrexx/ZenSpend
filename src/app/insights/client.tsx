@@ -14,7 +14,16 @@ import { useZenStore } from "@/hooks/use-zen-store";
 import { getInsights } from "../actions";
 import { Loader2, Sparkles } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChartTooltipContent } from "@/components/ui/chart";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import type { ChartConfig } from "@/components/ui/chart";
+
+const chartConfig = {
+  total: {
+    label: "Total",
+    color: "hsl(var(--primary))",
+  },
+} satisfies ChartConfig;
+
 
 export function InsightsClient() {
   const { transactions, isInitialized } = useZenStore();
@@ -98,8 +107,8 @@ export function InsightsClient() {
         </CardHeader>
         <CardContent>
           {transactions.length > 0 ? (
-            <ResponsiveContainer width="100%" height={350}>
-              <BarChart data={spendingByCategory}>
+            <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
+              <BarChart accessibilityLayer data={spendingByCategory}>
                  <XAxis
                   dataKey="name"
                   stroke="hsl(var(--muted-foreground))"
@@ -118,13 +127,13 @@ export function InsightsClient() {
                   axisLine={false}
                   tickFormatter={(value) => `$${value}`}
                 />
-                <Tooltip 
-                    cursor={{fill: 'hsl(var(--secondary))'}}
+                <ChartTooltip 
+                    cursor={false}
                     content={<ChartTooltipContent />} 
                 />
-                <Bar dataKey="total" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="total" fill="var(--color-total)" radius={4} />
               </BarChart>
-            </ResponsiveContainer>
+            </ChartContainer>
           ) : (
              <div className="text-center py-12">
               <p className="text-lg font-semibold">No chart data.</p>
