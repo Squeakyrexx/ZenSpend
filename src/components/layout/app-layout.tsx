@@ -6,6 +6,7 @@ import { SidebarProvider, Sidebar } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MainNav } from "@/components/layout/main-nav";
 import { MobileNav } from "@/components/layout/mobile-nav";
+import { cn } from "@/lib/utils";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const isMobile = useIsMobile();
@@ -27,7 +28,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         {!isClient && ( // Render a placeholder on the server
             <div className="hidden md:block w-12" />
         )}
-        <main className="flex-1 flex flex-col">
+        <main className={cn("flex-1", isClient && "flex flex-col")}>
           {children}
         </main>
         {isClient && isMobile && <MobileNav />}
