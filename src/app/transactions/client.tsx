@@ -39,7 +39,7 @@ import { useToast } from "@/hooks/use-toast";
 type SortKey = "description" | "category" | "amount" | "date";
 
 export function TransactionsClient() {
-  const { transactions, isInitialized, updateTransaction, deleteTransaction } = useZenStore();
+  const { transactions, isInitialized, updateTransaction, deleteTransaction, categoryIcons } = useZenStore();
   const [sortKey, setSortKey] = React.useState<SortKey>("date");
   const [sortDirection, setSortDirection] = React.useState<"asc" | "desc">(
     "desc"
@@ -185,7 +185,7 @@ export function TransactionsClient() {
               <TableBody>
                 {sortedTransactions.map((t) => (
                   <TableRow key={t.id}>
-                    <TableCell className="text-xl">{t.icon}</TableCell>
+                    <TableCell className="text-xl">{categoryIcons[t.category] || t.icon}</TableCell>
                     <TableCell className="font-medium">
                       {t.description}
                     </TableCell>

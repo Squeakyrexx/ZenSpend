@@ -20,7 +20,7 @@ import { Numpad } from "@/components/ui/numpad";
 type Step = "amount" | "description" | "loading" | "done";
 
 export default function HomePage() {
-  const { addTransaction, deleteTransaction } = useZenStore();
+  const { addTransaction, deleteTransaction, categories } = useZenStore();
   const { toast } = useToast();
   
   const [step, setStep] = React.useState<Step>("amount");
@@ -55,7 +55,7 @@ export default function HomePage() {
 
     setStep("loading");
     setLastTransaction(null);
-    const result = await parseTransactionDescription(description);
+    const result = await parseTransactionDescription(description, categories);
 
     if ("error" in result) {
       toast({
@@ -118,7 +118,7 @@ export default function HomePage() {
   }[step];
   
   return (
-    <div className="flex-1 flex items-center justify-center p-4">
+    <div className="flex-1 w-full flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center">
           <h1 className="text-4xl md:text-5xl font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">

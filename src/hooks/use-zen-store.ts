@@ -38,9 +38,10 @@ export const useZenStore = () => {
   const [budgets, setBudgets] = useLocalStorage<Budget[]>("zen-budgets", DEFAULT_BUDGETS);
   const [isInitialized, setIsInitialized] = useState(false);
 
+  const categories = budgets.map(b => b.category);
+  const categoryIcons = budgets.reduce((acc, b) => ({ ...acc, [b.category]: b.icon }), {} as Record<string, string>);
+
   useEffect(() => {
-    // This effect ensures that we only mark as initialized after the first render,
-    // where localStorage values are actually available.
     setIsInitialized(true);
   }, []);
 
@@ -68,6 +69,10 @@ export const useZenStore = () => {
     }, [setBudgets]
   );
   
+  const addCategory = useCallback((category: string, icon: string, limit: number) => {
+    setBudgets(prev => [...prev, { category, icon, limit, spent: 0}]);
+  }, [setBudgets]);
+
   const resetData = useCallback(() => {
       setTransactions([]);
       setBudgets(DEFAULT_BUDGETS);
@@ -76,8 +81,8 @@ export const useZenStore = () => {
   
   // Recalculate budget spent amounts whenever transactions change
   useEffect(() => {
-    if(isInitialized) { // only run after initial load
-        const newBudgets = DEFAULT_BUDGETS.map(b => ({...b, limit: budgets.find(bu => bu.category === b.category)?.limit ?? b.limit}));
+    if(isInitialized) {
+        const newBudgets = budgets.map(b => ({...b, spent: 0}));
         
         transactions.forEach(t => {
             const budget = newBudgets.find(b => b.category === t.category);
@@ -94,9 +99,12 @@ export const useZenStore = () => {
   return { 
     transactions, 
     budgets, 
+    categories,
+    categoryIcons,
     addTransaction,
     updateTransaction,
     deleteTransaction,
+    addCategory,
     updateBudgetLimit, 
     resetData, 
     isInitialized 

@@ -1,11 +1,15 @@
-export const CATEGORIES = [
+export let CATEGORIES = [
   'Food & Drink',
   'Transportation',
   'Entertainment',
   'Essentials',
   'Shopping',
   'Misc',
-] as const;
+] as string[];
+
+export function setCategories(newCategories: string[]) {
+    CATEGORIES = newCategories;
+}
 
 export type Category = (typeof CATEGORIES)[number];
 
@@ -22,4 +26,5 @@ export interface Budget {
   category: Category;
   limit: number;
   spent: number;
+  icon: string;
 }

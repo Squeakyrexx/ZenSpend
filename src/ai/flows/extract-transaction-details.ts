@@ -15,6 +15,7 @@ const ExtractTransactionDetailsInputSchema = z.object({
   transactionText: z
     .string()
     .describe('A natural language description of the transaction.'),
+  categories: z.array(z.string()).describe('A list of available categories to choose from.'),
 });
 export type ExtractTransactionDetailsInput = z.infer<
   typeof ExtractTransactionDetailsInputSchema
@@ -40,7 +41,16 @@ const prompt = ai.definePrompt({
   name: 'extractTransactionDetailsPrompt',
   input: {schema: ExtractTransactionDetailsInputSchema},
   output: {schema: ExtractTransactionDetailsOutputSchema},
-  prompt: `Extract the amount, create a concise title for the description, determine the category, and find an appropriate icon for the transaction from the following text.\n\nText: {{{transactionText}}}\n\nOutput the data as a JSON object. The amount should be a number, and the icon should be an emoji.\nThe description should be a short, clean title for the transaction, not the full text.\nThe category must be from the following list: Food & Drink, Transportation, Entertainment, Essentials, Shopping, Misc.\nExample for input "I bought a grande latte at Starbucks with my friend": { "amount": 7, "description": "Coffee at Starbucks", "category": "Food & Drink", "icon": "☕" }`,
+  prompt: `Extract the amount, create a concise title for the description, determine the category, and find an appropriate icon for the transaction from the following text.
+
+Text: {{{transactionText}}}
+
+The category must be one of the following: {{#each categories}}"{{this}}"{{#unless @last}}, {{/unless}}{{/each}}.
+
+Output the data as a JSON object. The amount should be a number, and the icon should be an emoji.
+The description should be a short, clean title for the transaction, not the full text.
+
+Example for input "I bought a grande latte at Starbucks with my friend": { "amount": 7, "description": "Coffee at Starbucks", "category": "Food & Drink", "icon": "☕" }`,
 });
 
 const extractTransactionDetailsFlow = ai.defineFlow(

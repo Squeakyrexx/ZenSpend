@@ -3,8 +3,7 @@
 
 import * as React from "react";
 import { useZenStore } from "@/hooks/use-zen-store";
-import { CATEGORY_ICONS } from "@/lib/data";
-import type { Category } from "@/lib/types";
+import type { Category, Budget } from "@/lib/types";
 import {
   Card,
   CardContent,
@@ -12,35 +11,42 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { NumpadDialog } from "@/components/ui/numpad-dialog";
-import { Pencil } from "lucide-react";
+import { Pencil, PlusCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
 
 function BudgetCard({
-  category,
-  spent,
-  limit,
+  budget,
   onUpdateLimit,
 }: {
-  category: Category;
-  spent: number;
-  limit: number;
+  budget: Budget;
   onUpdateLimit: (category: Category, newLimit: number) => void;
 }) {
   const [isNumpadOpen, setIsNumpadOpen] = React.useState(false);
   const { toast } = useToast();
-  const progress = limit > 0 ? (spent / limit) * 100 : 0;
+  const progress = budget.limit > 0 ? (budget.spent / budget.limit) * 100 : 0;
 
   const handleUpdate = (newLimit: number) => {
     if (newLimit > 0) {
-      onUpdateLimit(category, newLimit);
+      onUpdateLimit(budget.category, newLimit);
       toast({
         title: "Budget Updated",
-        description: `Your budget for ${category} is now $${newLimit.toFixed(2)}.`,
+        description: `Your budget for ${budget.category} is now $${newLimit.toFixed(2)}.`,
       });
     } else {
         toast({
@@ -63,16 +69,16 @@ function BudgetCard({
       <Card className="hover:border-primary/50 transition-colors">
         <CardHeader>
           <CardTitle className="flex items-center gap-3">
-            <span className="text-2xl">{CATEGORY_ICONS[category]}</span>
-            {category}
+            <span className="text-2xl">{budget.icon}</span>
+            {budget.category}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
             <div className="flex justify-between items-baseline mb-1">
-              <span className="font-bold text-lg">${spent.toFixed(2)}</span>
+              <span className="font-bold text-lg">${budget.spent.toFixed(2)}</span>
               <span className="text-sm text-muted-foreground">
-                of ${limit.toFixed(2)}
+                of ${budget.limit.toFixed(2)}
               </span>
             </div>
             <Progress 
@@ -82,11 +88,11 @@ function BudgetCard({
             />
             <p className={cn(
                 "text-right text-sm mt-1 font-medium",
-                spent > limit && "text-red-500"
+                budget.spent > budget.limit && "text-red-500"
             )}>
-              {spent > limit 
-                ? `$${(spent - limit).toFixed(2)} over` 
-                : `$${(limit - spent).toFixed(2)} remaining`
+              {budget.spent > budget.limit 
+                ? `$${(budget.spent - budget.limit).toFixed(2)} over` 
+                : `$${(budget.limit - budget.spent).toFixed(2)} remaining`
               }
             </p>
           </div>
@@ -99,20 +105,130 @@ function BudgetCard({
         open={isNumpadOpen}
         onOpenChange={setIsNumpadOpen}
         onConfirm={handleUpdate}
-        initialValue={limit}
-        title={`Set budget for ${category}`}
+        initialValue={budget.limit}
+        title={`Set budget for ${budget.category}`}
         description="Enter the new budget limit for this category."
       />
     </>
   );
 }
 
+function AddCategoryDialog({
+    open,
+    onOpenChange,
+    onAddCategory,
+}: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    onAddCategory: (name: string, icon: string, limit: number) => void;
+}) {
+    const [name, setName] = React.useState("");
+    const [icon, setIcon] = React.useState("");
+    const [limit, setLimit] = React.useState(0);
+    const [isNumpadOpen, setIsNumpadOpen] = React.useState(false);
+    const { toast } = useToast();
+
+    const handleConfirmLimit = (newLimit: number) => {
+        if (newLimit > 0) {
+            setLimit(newLimit);
+        } else {
+            toast({
+                variant: "destructive",
+                title: "Invalid Amount",
+                description: `Please enter a number greater than zero.`,
+            });
+        }
+        setIsNumpadOpen(false);
+    };
+
+    const handleSubmit = () => {
+        if (!name.trim() || !icon.trim() || limit <= 0) {
+            toast({
+                variant: "destructive",
+                title: "Missing Information",
+                description: "Please fill out all fields with a valid budget limit.",
+            });
+            return;
+        }
+        onAddCategory(name, icon, limit);
+        onOpenChange(false);
+        setName("");
+        setIcon("");
+        setLimit(0);
+    };
+
+    return (
+        <>
+            <Dialog open={open} onOpenChange={onOpenChange}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Add New Category</DialogTitle>
+                        <DialogDescription>
+                            Create a custom budget category for your expenses.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="category-name">Category Name</Label>
+                            <Input id="category-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Hobbies" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="category-icon">Icon (Emoji)</Label>
+                            <Input id="category-icon" value={icon} onChange={(e) => setIcon(e.target.value)} placeholder="e.g. 🎨" maxLength={2} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Budget Limit</Label>
+                            <Button variant="outline" className="w-full justify-start font-normal" onClick={() => setIsNumpadOpen(true)}>
+                                {limit > 0 ? `$${limit.toFixed(2)}` : "Set Budget Limit"}
+                            </Button>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <DialogClose asChild>
+                            <Button variant="outline">Cancel</Button>
+                        </DialogClose>
+                        <Button onClick={handleSubmit}>Add Category</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <NumpadDialog
+                open={isNumpadOpen}
+                onOpenChange={setIsNumpadOpen}
+                onConfirm={handleConfirmLimit}
+                initialValue={limit}
+                title="Set Budget Limit"
+                description="Enter the budget limit for your new category."
+            />
+        </>
+    );
+}
+
+
 export function BudgetsClient() {
-  const { budgets, updateBudgetLimit, isInitialized } = useZenStore();
+  const { budgets, updateBudgetLimit, addCategory, isInitialized } = useZenStore();
+  const [isAddCategoryOpen, setIsAddCategoryOpen] = React.useState(false);
+  const { toast } = useToast();
 
   const totalBudget = React.useMemo(() => budgets.reduce((sum, b) => sum + b.limit, 0), [budgets]);
   const totalSpent = React.useMemo(() => budgets.reduce((sum, b) => sum + b.spent, 0), [budgets]);
   
+  const handleAddCategory = (name: string, icon: string, limit: number) => {
+      if (budgets.find(b => b.category.toLowerCase() === name.toLowerCase())) {
+          toast({
+              variant: "destructive",
+              title: "Category Exists",
+              description: `A category named "${name}" already exists.`,
+          });
+          return;
+      }
+      addCategory(name, icon, limit);
+      toast({
+          title: "Category Added",
+          description: `The "${name}" category has been added to your budgets.`,
+      });
+  };
+
   if (!isInitialized) {
     return (
        <div className="p-4 md:p-8">
@@ -152,11 +268,24 @@ export function BudgetsClient() {
         {budgets.map((budget) => (
           <BudgetCard
             key={budget.category}
-            {...budget}
+            budget={budget}
             onUpdateLimit={updateBudgetLimit}
           />
         ))}
+         <Card className="border-dashed border-2 hover:border-primary hover:text-primary transition-colors flex items-center justify-center">
+            <CardHeader className="text-center">
+                <Button variant="ghost" className="w-full h-full text-lg" onClick={() => setIsAddCategoryOpen(true)}>
+                    <PlusCircle className="mr-2 h-6 w-6"/>
+                    Add Category
+                </Button>
+            </CardHeader>
+        </Card>
       </div>
+       <AddCategoryDialog 
+        open={isAddCategoryOpen}
+        onOpenChange={setIsAddCategoryOpen}
+        onAddCategory={handleAddCategory}
+      />
     </div>
   );
 }

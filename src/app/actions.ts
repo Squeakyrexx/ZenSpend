@@ -3,10 +3,10 @@
 import { extractTransactionDetails } from "@/ai/flows/extract-transaction-details";
 import { generateSpendingInsights } from "@/ai/flows/generate-spending-insights";
 import type { Transaction, Category } from "@/lib/types";
-import { CATEGORIES } from "@/lib/types";
 
 export async function parseTransactionDescription(
-  descriptionText: string
+  descriptionText: string,
+  categories: string[]
 ): Promise<Omit<Transaction, "id" | "date" | "amount"> | { error: string }> {
   try {
     if (!descriptionText.trim()) {
@@ -14,9 +14,9 @@ export async function parseTransactionDescription(
     }
     // The AI performs better with some monetary context, even if it's zero.
     const fullText = `$0 ${descriptionText}`;
-    const result = await extractTransactionDetails({ transactionText: fullText });
+    const result = await extractTransactionDetails({ transactionText: fullText, categories });
 
-    if (!result || !result.category || !CATEGORIES.includes(result.category as Category)) {
+    if (!result || !result.category || !categories.includes(result.category as Category)) {
       return { error: "Could not determine a valid category for this transaction." };
     }
 
