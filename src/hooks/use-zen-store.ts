@@ -53,6 +53,10 @@ export const useZenStore = () => {
     setTransactions(prev => prev.map(t => t.id === transactionId ? { ...t, ...updates } : t));
   }, [setTransactions]);
 
+  const deleteTransaction = useCallback((transactionId: string) => {
+    setTransactions(prev => prev.filter(t => t.id !== transactionId));
+  }, [setTransactions]);
+
   const updateBudgetLimit = useCallback((category: Category, newLimit: number) => {
       setBudgets(prev => 
         prev.map(budget => 
@@ -92,6 +96,7 @@ export const useZenStore = () => {
     budgets, 
     addTransaction,
     updateTransaction,
+    deleteTransaction,
     updateBudgetLimit, 
     resetData, 
     isInitialized 

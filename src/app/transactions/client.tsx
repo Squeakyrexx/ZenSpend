@@ -10,6 +10,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -19,7 +29,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowUpDown, Pencil } from "lucide-react";
+import { ArrowUpDown, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Transaction } from "@/lib/types";
 import { NumpadDialog } from "@/components/ui/numpad-dialog";
@@ -29,12 +39,13 @@ import { useToast } from "@/hooks/use-toast";
 type SortKey = "description" | "category" | "amount" | "date";
 
 export function TransactionsClient() {
-  const { transactions, isInitialized, updateTransaction } = useZenStore();
+  const { transactions, isInitialized, updateTransaction, deleteTransaction } = useZenStore();
   const [sortKey, setSortKey] = React.useState<SortKey>("date");
   const [sortDirection, setSortDirection] = React.useState<"asc" | "desc">(
     "desc"
   );
   const [editingTransaction, setEditingTransaction] = React.useState<Transaction | null>(null);
+  const [deletingTransaction, setDeletingTransaction] = React.useState<Transaction | null>(null);
   const { toast } = useToast();
 
   const handleSort = (key: SortKey) => {
@@ -62,6 +73,17 @@ export function TransactionsClient() {
         });
       }
       setEditingTransaction(null);
+    }
+  };
+
+  const handleDelete = () => {
+    if (deletingTransaction) {
+      deleteTransaction(deletingTransaction.id);
+      toast({
+        title: "Transaction Deleted",
+        description: `"${deletingTransaction.description}" has been removed.`,
+      });
+      setDeletingTransaction(null);
     }
   };
 
@@ -157,7 +179,7 @@ export function TransactionsClient() {
                       Date {renderSortArrow("date")}
                     </Button>
                   </TableHead>
-                  <TableHead className="w-[80px] text-right">Edit</TableHead>
+                  <TableHead className="w-[120px] text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -180,6 +202,9 @@ export function TransactionsClient() {
                         <Button variant="ghost" size="icon" onClick={() => setEditingTransaction(t)}>
                             <Pencil className="h-4 w-4" />
                         </Button>
+                        <Button variant="ghost" size="icon" className="text-destructive/80 hover:text-destructive" onClick={() => setDeletingTransaction(t)}>
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -198,6 +223,28 @@ export function TransactionsClient() {
             title="Edit Transaction Amount"
             description={`Update the amount for "${editingTransaction.description}"`}
          />
+      )}
+
+      {deletingTransaction && (
+        <AlertDialog
+            open={!!deletingTransaction}
+            onOpenChange={(open) => !open && setDeletingTransaction(null)}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the transaction for "${deletingTransaction.description}".
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setDeletingTransaction(null)}>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       )}
     </div>
   );
