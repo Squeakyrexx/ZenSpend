@@ -19,17 +19,23 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowUpDown } from "lucide-react";
+import { ArrowUpDown, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Transaction } from "@/lib/types";
+import { NumpadDialog } from "@/components/ui/numpad-dialog";
+import { useToast } from "@/hooks/use-toast";
+
 
 type SortKey = "description" | "category" | "amount" | "date";
 
 export function TransactionsClient() {
-  const { transactions, isInitialized } = useZenStore();
+  const { transactions, isInitialized, updateTransaction } = useZenStore();
   const [sortKey, setSortKey] = React.useState<SortKey>("date");
   const [sortDirection, setSortDirection] = React.useState<"asc" | "desc">(
     "desc"
   );
+  const [editingTransaction, setEditingTransaction] = React.useState<Transaction | null>(null);
+  const { toast } = useToast();
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -37,6 +43,25 @@ export function TransactionsClient() {
     } else {
       setSortKey(key);
       setSortDirection("asc");
+    }
+  };
+
+  const handleEditAmount = (newAmount: number) => {
+    if (editingTransaction) {
+      if (newAmount > 0) {
+        updateTransaction(editingTransaction.id, { amount: newAmount });
+        toast({
+            title: "Transaction Updated",
+            description: `Amount set to $${newAmount.toFixed(2)}.`,
+        });
+      } else {
+         toast({
+            variant: "destructive",
+            title: "Invalid Amount",
+            description: `Please enter a number greater than zero.`,
+        });
+      }
+      setEditingTransaction(null);
     }
   };
 
@@ -132,6 +157,7 @@ export function TransactionsClient() {
                       Date {renderSortArrow("date")}
                     </Button>
                   </TableHead>
+                  <TableHead className="w-[80px] text-right">Edit</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -150,6 +176,11 @@ export function TransactionsClient() {
                     <TableCell className="hidden md:table-cell text-right text-muted-foreground">
                       {new Date(t.date).toLocaleDateString()}
                     </TableCell>
+                    <TableCell className="text-right">
+                        <Button variant="ghost" size="icon" onClick={() => setEditingTransaction(t)}>
+                            <Pencil className="h-4 w-4" />
+                        </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -157,6 +188,17 @@ export function TransactionsClient() {
           )}
         </CardContent>
       </Card>
+
+      {editingTransaction && (
+         <NumpadDialog
+            open={!!editingTransaction}
+            onOpenChange={(open) => !open && setEditingTransaction(null)}
+            onConfirm={handleEditAmount}
+            initialValue={editingTransaction.amount}
+            title="Edit Transaction Amount"
+            description={`Update the amount for "${editingTransaction.description}"`}
+         />
+      )}
     </div>
   );
 }

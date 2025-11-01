@@ -46,15 +46,12 @@ export const useZenStore = () => {
 
   const addTransaction = useCallback((transaction: Transaction) => {
       setTransactions(prev => [transaction, ...prev]);
-      setBudgets(prev => 
-        prev.map(budget => 
-          budget.category === transaction.category
-            ? { ...budget, spent: budget.spent + transaction.amount }
-            : budget
-        )
-      );
-    }, [setTransactions, setBudgets]
+    }, [setTransactions]
   );
+  
+  const updateTransaction = useCallback((transactionId: string, updates: Partial<Transaction>) => {
+    setTransactions(prev => prev.map(t => t.id === transactionId ? { ...t, ...updates } : t));
+  }, [setTransactions]);
 
   const updateBudgetLimit = useCallback((category: Category, newLimit: number) => {
       setBudgets(prev => 
@@ -72,11 +69,29 @@ export const useZenStore = () => {
       setBudgets(DEFAULT_BUDGETS);
     }, [setTransactions, setBudgets]
   );
+  
+  // Recalculate budget spent amounts whenever transactions change
+  useEffect(() => {
+    if(isInitialized) { // only run after initial load
+        const newBudgets = DEFAULT_BUDGETS.map(b => ({...b, limit: budgets.find(bu => bu.category === b.category)?.limit ?? b.limit}));
+        
+        transactions.forEach(t => {
+            const budget = newBudgets.find(b => b.category === t.category);
+            if (budget) {
+                budget.spent += t.amount;
+            }
+        });
+        setBudgets(newBudgets);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [transactions, isInitialized]);
+
 
   return { 
     transactions, 
     budgets, 
-    addTransaction, 
+    addTransaction,
+    updateTransaction,
     updateBudgetLimit, 
     resetData, 
     isInitialized 

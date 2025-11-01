@@ -81,6 +81,7 @@ export default function HomePage() {
     setStep("amount");
     setAmount(0);
     setDescription("");
+    setLastTransaction(null);
   };
 
   const currentTitle = {
@@ -144,7 +145,7 @@ export default function HomePage() {
                 )}
 
                 {(step === "loading" || step === "done") && (
-                   <div className="flex flex-col items-center justify-center text-center min-h-[300px]">
+                   <div className="flex flex-col items-center justify-center text-center min-h-[404px]">
                      {step === 'loading' && <Loader2 className="h-12 w-12 text-primary animate-spin" />}
                      {step === 'done' && <motion.div initial={{scale: 0.5}} animate={{scale: 1}}><Check className="h-24 w-24 text-green-500" /></motion.div>}
                    </div>

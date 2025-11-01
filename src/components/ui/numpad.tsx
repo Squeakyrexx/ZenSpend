@@ -7,11 +7,18 @@ import { cn } from "@/lib/utils";
 
 interface NumpadProps {
   onConfirm: (value: number) => void;
+  initialValue?: string;
   className?: string;
 }
 
-export function Numpad({ onConfirm, className }: NumpadProps) {
-  const [value, setValue] = React.useState("0");
+export function Numpad({ onConfirm, initialValue = "0", className }: NumpadProps) {
+  const [value, setValue] = React.useState(initialValue);
+
+  // When the component mounts or initialValue changes, reset the state
+  React.useEffect(() => {
+    setValue(initialValue);
+  }, [initialValue]);
+
 
   const handlePress = (key: string) => {
     if (key === "backspace") {
@@ -52,7 +59,7 @@ export function Numpad({ onConfirm, className }: NumpadProps) {
   ];
 
   return (
-    <div className={cn("flex flex-col items-center space-y-4", className)}>
+    <div className={cn("flex flex-col items-center space-y-4 pt-4", className)}>
       <div className="text-6xl font-bold tracking-tighter w-full text-center p-4 rounded-lg bg-secondary/50 truncate">
         <span className="text-3xl font-medium align-super text-muted-foreground mr-1">$</span>
         {value}
@@ -77,7 +84,7 @@ export function Numpad({ onConfirm, className }: NumpadProps) {
         </Button>
       </div>
       <Button size="lg" className="w-full font-bold text-lg" onClick={handleConfirm}>
-        Next <ArrowRight className="ml-2" />
+        Confirm <ArrowRight className="ml-2" />
       </Button>
     </div>
   );

@@ -12,10 +12,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
+import { NumpadDialog } from "@/components/ui/numpad-dialog";
+import { Pencil } from "lucide-react";
 
 function BudgetCard({
   category,
@@ -28,60 +29,63 @@ function BudgetCard({
   limit: number;
   onUpdateLimit: (category: Category, newLimit: number) => void;
 }) {
-  const [newLimit, setNewLimit] = React.useState(limit.toString());
+  const [isNumpadOpen, setIsNumpadOpen] = React.useState(false);
   const { toast } = useToast();
   const progress = (spent / limit) * 100;
 
-  const handleUpdate = () => {
-    const parsedLimit = parseFloat(newLimit);
-    if (!isNaN(parsedLimit) && parsedLimit > 0) {
-      onUpdateLimit(category, parsedLimit);
+  const handleUpdate = (newLimit: number) => {
+    if (newLimit > 0) {
+      onUpdateLimit(category, newLimit);
       toast({
         title: "Budget Updated",
-        description: `Your budget for ${category} is now $${parsedLimit.toFixed(2)}.`,
+        description: `Your budget for ${category} is now $${newLimit.toFixed(2)}.`,
       });
     } else {
         toast({
             variant: "destructive",
             title: "Invalid Amount",
-            description: `Please enter a valid number for the budget limit.`,
+            description: `Please enter a number greater than zero.`,
         });
     }
+    setIsNumpadOpen(false);
   };
 
   return (
-    <Card className="hover:border-primary/50 transition-colors">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-3">
-          <span className="text-2xl">{CATEGORY_ICONS[category]}</span>
-          {category}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div>
-          <div className="flex justify-between items-baseline mb-1">
-            <span className="font-bold text-lg">${spent.toFixed(2)}</span>
-            <span className="text-sm text-muted-foreground">
-              of ${limit.toFixed(2)}
-            </span>
+    <>
+      <Card className="hover:border-primary/50 transition-colors">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-3">
+            <span className="text-2xl">{CATEGORY_ICONS[category]}</span>
+            {category}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <div className="flex justify-between items-baseline mb-1">
+              <span className="font-bold text-lg">${spent.toFixed(2)}</span>
+              <span className="text-sm text-muted-foreground">
+                of ${limit.toFixed(2)}
+              </span>
+            </div>
+            <Progress value={progress > 100 ? 100 : progress} className="h-3" />
+            <p className="text-right text-sm mt-1 font-medium">
+              ${(limit - spent).toFixed(2)} remaining
+            </p>
           </div>
-          <Progress value={progress > 100 ? 100 : progress} className="h-3" />
-          <p className="text-right text-sm mt-1 font-medium">
-            ${(limit - spent).toFixed(2)} remaining
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Input
-            type="number"
-            value={newLimit}
-            onChange={(e) => setNewLimit(e.target.value)}
-            placeholder="Set limit"
-            className="h-9"
-          />
-          <Button size="sm" onClick={handleUpdate}>Set</Button>
-        </div>
-      </CardContent>
-    </Card>
+          <Button variant="outline" className="w-full" onClick={() => setIsNumpadOpen(true)}>
+             <Pencil className="mr-2 h-4 w-4" /> Edit Limit
+          </Button>
+        </CardContent>
+      </Card>
+      <NumpadDialog
+        open={isNumpadOpen}
+        onOpenChange={setIsNumpadOpen}
+        onConfirm={handleUpdate}
+        initialValue={limit}
+        title={`Set budget for ${category}`}
+        description="Enter the new budget limit for this category."
+      />
+    </>
   );
 }
 
