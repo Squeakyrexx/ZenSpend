@@ -5,28 +5,30 @@ import { generateSpendingInsights } from "@/ai/flows/generate-spending-insights"
 import type { Transaction, Category } from "@/lib/types";
 import { CATEGORIES } from "@/lib/types";
 
-export async function parseTransaction(
-  text: string
-): Promise<Omit<Transaction, "id" | "date"> | { error: string }> {
+export async function parseTransactionDescription(
+  descriptionText: string
+): Promise<Omit<Transaction, "id" | "date" | "amount"> | { error: string }> {
   try {
-    if (!text.trim()) {
-      return { error: "Please enter a transaction." };
+    if (!descriptionText.trim()) {
+      return { error: "Please enter a transaction description." };
     }
-    const result = await extractTransactionDetails({ transactionText: text });
+    // The AI performs better with some monetary context, even if it's zero.
+    const fullText = `$0 ${descriptionText}`;
+    const result = await extractTransactionDetails({ transactionText: fullText });
 
     if (!result || !result.category || !CATEGORIES.includes(result.category as Category)) {
       return { error: "Could not determine a valid category for this transaction." };
     }
 
+    // The amount is now handled on the client, so we only return AI-generated details.
     return {
-      amount: result.amount,
       description: result.description,
       category: result.category as Category,
       icon: result.icon,
     };
   } catch (e) {
     console.error(e);
-    return { error: "Failed to parse transaction. Please check your input and try again." };
+    return { error: "Failed to parse transaction. Please try a different description." };
   }
 }
 
