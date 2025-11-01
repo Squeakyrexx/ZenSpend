@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -17,6 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { NumpadDialog } from "@/components/ui/numpad-dialog";
 import { Pencil } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 function BudgetCard({
   category,
@@ -31,7 +33,7 @@ function BudgetCard({
 }) {
   const [isNumpadOpen, setIsNumpadOpen] = React.useState(false);
   const { toast } = useToast();
-  const progress = (spent / limit) * 100;
+  const progress = limit > 0 ? (spent / limit) * 100 : 0;
 
   const handleUpdate = (newLimit: number) => {
     if (newLimit > 0) {
@@ -50,6 +52,12 @@ function BudgetCard({
     setIsNumpadOpen(false);
   };
 
+  const getProgressColor = () => {
+    if (progress > 100) return "bg-red-500";
+    if (progress >= 80) return "bg-yellow-500";
+    return "bg-primary";
+  }
+
   return (
     <>
       <Card className="hover:border-primary/50 transition-colors">
@@ -67,9 +75,19 @@ function BudgetCard({
                 of ${limit.toFixed(2)}
               </span>
             </div>
-            <Progress value={progress > 100 ? 100 : progress} className="h-3" />
-            <p className="text-right text-sm mt-1 font-medium">
-              ${(limit - spent).toFixed(2)} remaining
+            <Progress 
+              value={progress > 100 ? 100 : progress} 
+              className="h-3"
+              indicatorClassName={getProgressColor()}
+            />
+            <p className={cn(
+                "text-right text-sm mt-1 font-medium",
+                spent > limit && "text-red-500"
+            )}>
+              {spent > limit 
+                ? `$${(spent - limit).toFixed(2)} over` 
+                : `$${(limit - spent).toFixed(2)} remaining`
+              }
             </p>
           </div>
           <Button variant="outline" className="w-full" onClick={() => setIsNumpadOpen(true)}>
