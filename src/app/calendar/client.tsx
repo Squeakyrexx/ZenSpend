@@ -232,6 +232,10 @@ export function CalendarClient() {
     () => Object.fromEntries(categories.map(c => [c, true]))
   );
 
+  React.useEffect(() => {
+    setSelectedCategories(Object.fromEntries(categories.map(c => [c, true])));
+  }, [categories]);
+
   const filteredTransactions = React.useMemo(() => {
     return transactions.filter(t => selectedCategories[t.category]);
   }, [transactions, selectedCategories]);
@@ -266,8 +270,8 @@ export function CalendarClient() {
     const dayString = format(day, "yyyy-MM-dd");
     const metric = dailyMetrics.get(dayString);
     if (!metric) return 0;
-    
-    const legend = viewMode === 'count' 
+
+    const boundaries = viewMode === 'count' 
       ? [1, 2, 3, 4, Infinity] // levels for count
       : [50, 100, 250, 500, Infinity]; // levels for amount
     
@@ -275,13 +279,16 @@ export function CalendarClient() {
 
     if (value <= 0) return 0;
     
-    const level = legend.findIndex(l => value < l) + 1;
-    return level > 0 ? level : legend.length;
+    // Find the index of the first boundary the value is less than or equal to.
+    const levelIndex = boundaries.findIndex(boundary => value <= boundary);
+    
+    // The level is the index + 1. If not found, it's the highest level.
+    return levelIndex !== -1 ? levelIndex + 1 : boundaries.length;
   };
   
   const modifiers = {
     ...Object.fromEntries(
-      Array.from({ length: 5 }, (_, i) => i + 1).map((level) => [
+      Array.from({ length: legendItems.length }, (_, i) => i + 1).map((level) => [
         `level-${level}`,
         (day: Date) => getLevel(day) === level,
       ])
@@ -349,9 +356,9 @@ export function CalendarClient() {
                         {categories.map((category) => (
                         <DropdownMenuCheckboxItem
                             key={category}
-                            checked={selectedCategories[category]}
+                            checked={selectedCategories[category] ?? false}
                             onCheckedChange={(checked) => {
-                                setSelectedCategories(prev => ({ ...prev, [category]: checked }));
+                                setSelectedCategories(prev => ({ ...prev, [category]: !!checked }));
                             }}
                         >
                             {category}
@@ -413,3 +420,5 @@ export function CalendarClient() {
     </div>
   );
 }
+
+    
