@@ -189,24 +189,26 @@ export const useZenStore = () => {
   
   const calculateMonthlyIncome = useCallback(() => {
     const today = new Date();
-    const start = startOfMonth(today);
-    const end = eachDayOfInterval({ start, end: today }).pop()!;
+    const startOfCurrentMonth = startOfMonth(today);
     let totalIncome = 0;
 
     incomes.forEach(income => {
         const incomeStartDate = new Date(income.startDate);
-        if (income.frequency === 'one-time') {
-            if (isSameMonth(incomeStartDate, today)) {
-                totalIncome += income.amount;
-            }
-        } else if (incomeStartDate <= end) {
-             if (income.frequency === 'monthly') {
+
+        // Only consider incomes that have started and are relevant for the current month
+        if (isSameMonth(incomeStartDate, startOfCurrentMonth) || incomeStartDate < startOfCurrentMonth) {
+            if (income.frequency === 'one-time') {
+                // Include one-time incomes that happened this month
+                if (isSameMonth(incomeStartDate, startOfCurrentMonth)) {
+                    totalIncome += income.amount;
+                }
+            } else if (income.frequency === 'monthly') {
                 totalIncome += income.amount;
             } else if (income.frequency === 'weekly') {
-                const weeksInMonth = getWeeksInMonth(today);
+                const weeksInMonth = getWeeksInMonth(startOfCurrentMonth);
                 totalIncome += income.amount * weeksInMonth;
             } else if (income.frequency === 'bi-weekly') {
-                 // A simple approximation: 2 checks a month. A more complex implementation could track specific paydays.
+                 // A simple approximation: 2 checks a month.
                  totalIncome += income.amount * 2;
             }
         }
