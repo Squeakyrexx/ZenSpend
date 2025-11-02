@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Icon } from '@/lib/icons.tsx';
-import { format, differenceInDays, isPast, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, startOfToday, isSameMonth } from 'date-fns';
+import { format, differenceInDays, isPast, addMonths, subMonths, startOfMonth, eachDayOfInterval, startOfToday } from 'date-fns';
 import {
   Area,
   AreaChart,
@@ -74,7 +74,7 @@ function MonthlySummaryCard({ income, expenses }: { income: number; expenses: nu
 
 
 export function DashboardClient() {
-  const { transactions, recurringPayments, budgets, isInitialized, categoryIcons, calculateMonthlyIncome } =
+  const { transactions, recurringPayments, budgets, isInitialized, categoryIcons, calculateMonthlyIncome, calculateMonthlyExpenses } =
     useZenStore();
   const [insights, setInsights] = React.useState<string[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
@@ -144,17 +144,11 @@ export function DashboardClient() {
   }, [transactions]);
 
     const { monthlyIncome, monthlyExpenses } = React.useMemo(() => {
-    const today = new Date();
-    const startOfCurrentMonth = startOfMonth(today);
-
-    const expenses = transactions
-      .filter(t => isSameMonth(new Date(t.date), startOfCurrentMonth))
-      .reduce((sum, t) => sum + t.amount, 0);
-
     const income = calculateMonthlyIncome();
+    const expenses = calculateMonthlyExpenses();
 
     return { monthlyIncome: income, monthlyExpenses: expenses };
-  }, [transactions, calculateMonthlyIncome]);
+  }, [transactions, recurringPayments, calculateMonthlyIncome, calculateMonthlyExpenses]);
   
   const getProgressColor = (progress: number) => {
     if (progress > 100) return "bg-red-500";

@@ -191,12 +191,14 @@ export const useZenStore = () => {
     const today = new Date();
     const startOfCurrentMonth = startOfMonth(today);
     let totalIncome = 0;
-
+  
     incomes.forEach(income => {
         const incomeStartDate = new Date(income.startDate);
-
-        if (isSameMonth(incomeStartDate, startOfCurrentMonth) || incomeStartDate < startOfCurrentMonth) {
+  
+        // Only consider income sources that have started
+        if (incomeStartDate <= today) {
             if (income.frequency === 'one-time') {
+                // Only include one-time income if it occurred in the current month
                 if (isSameMonth(incomeStartDate, startOfCurrentMonth)) {
                     totalIncome += income.amount;
                 }
@@ -207,13 +209,26 @@ export const useZenStore = () => {
                 const weeksInMonth = daysInMonth / 7;
                 totalIncome += income.amount * weeksInMonth;
             } else if (income.frequency === 'bi-weekly') {
-                 totalIncome += income.amount * 2;
+                 totalIncome += income.amount * 2; // Simplified for now
             }
         }
     });
-
+  
     return totalIncome;
   }, [incomes]);
+
+  const calculateMonthlyExpenses = useCallback(() => {
+    const today = new Date();
+    const startOfCurrentMonth = startOfMonth(today);
+
+    const oneTimeExpenses = transactions
+        .filter(t => isSameMonth(new Date(t.date), startOfCurrentMonth))
+        .reduce((sum, t) => sum + t.amount, 0);
+
+    const recurringExpenses = recurringPayments.reduce((sum, p) => sum + p.amount, 0);
+    
+    return oneTimeExpenses + recurringExpenses;
+  }, [transactions, recurringPayments]);
 
 
   return { 
@@ -236,6 +251,7 @@ export const useZenStore = () => {
     updateIncome,
     deleteIncome,
     calculateMonthlyIncome,
+    calculateMonthlyExpenses,
     resetData, 
     isInitialized 
   };
