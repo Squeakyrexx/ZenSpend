@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { useZenStore } from "@/hooks/use-zen-store";
-import type { Transaction, RecurringPayment } from "@/lib/types";
+import type { Transaction, RecurringPayment, Category } from "@/lib/types";
 import {
   Card,
   CardContent,
@@ -27,13 +27,24 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Icon } from "@/lib/icons.tsx";
 import { format, isSameDay, startOfMonth, isFuture, isToday, isSameMonth } from "date-fns";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
+import { ListFilter } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 
 function TransactionDetailsDialog({
@@ -89,17 +100,19 @@ function DailyTransactionsSheet({
   selectedDay,
   onOpenChange,
   onViewTransaction,
+  filteredTransactions,
 }: {
   selectedDay: Date | null;
   onOpenChange: (open: boolean) => void;
   onViewTransaction: (transaction: Transaction) => void;
+  filteredTransactions: Transaction[];
 }) {
-  const { transactions, categoryIcons, recurringPayments } = useZenStore();
+  const { categoryIcons, recurringPayments } = useZenStore();
 
   const dailyTransactions = React.useMemo(() => {
     if (!selectedDay) return [];
-    return transactions.filter((t) => isSameDay(new Date(t.date), selectedDay));
-  }, [transactions, selectedDay]);
+    return filteredTransactions.filter((t) => isSameDay(new Date(t.date), selectedDay));
+  }, [filteredTransactions, selectedDay]);
 
   const upcomingBills = React.useMemo(() => {
     if (!selectedDay || !(isFuture(selectedDay) || isToday(selectedDay))) return [];
@@ -192,7 +205,7 @@ function DailyTransactionsSheet({
   );
 }
 
-const legendItems = [
+const countLegend = [
   { label: '1', className: 'bg-blue-300/60' },
   { label: '2', className: 'bg-green-300/60' },
   { label: '3', className: 'bg-orange-300/60' },
@@ -200,26 +213,45 @@ const legendItems = [
   { label: '5+', className: 'bg-red-300/60' },
 ];
 
+const amountLegend = [
+    { label: '< $50', className: 'bg-sky-200/60' },
+    { label: '$50+', className: 'bg-teal-300/60' },
+    { label: '$100+', className: 'bg-yellow-300/60' },
+    { label: '$250+', className: 'bg-orange-400/60' },
+    { label: '$500+', className: 'bg-red-400/60' },
+];
+
 export function CalendarClient() {
-  const { transactions, isInitialized, recurringPayments } = useZenStore();
+  const { transactions, isInitialized, recurringPayments, categories } = useZenStore();
   const [currentMonth, setCurrentMonth] = React.useState(new Date());
   const [selectedDay, setSelectedDay] = React.useState<Date | null>(null);
   const [viewingTransaction, setViewingTransaction] = React.useState<Transaction | null>(null);
+  const [viewMode, setViewMode] = React.useState<"count" | "amount">("count");
+  const [selectedCategories, setSelectedCategories] = React.useState<Record<Category, boolean>>(
+    () => Object.fromEntries(categories.map(c => [c, true]))
+  );
+
+  const filteredTransactions = React.useMemo(() => {
+    return transactions.filter(t => selectedCategories[t.category]);
+  }, [transactions, selectedCategories]);
 
 
-  const dailyTransactionCounts = React.useMemo(() => {
-    const counts = new Map<string, number>();
-    transactions.forEach((t) => {
+  const dailyMetrics = React.useMemo(() => {
+    const metrics = new Map<string, { count: number; amount: number }>();
+    filteredTransactions.forEach((t) => {
       const day = format(new Date(t.date), "yyyy-MM-dd");
-      counts.set(day, (counts.get(day) || 0) + 1);
+      const existing = metrics.get(day) || { count: 0, amount: 0 };
+      existing.count += 1;
+      existing.amount += t.amount;
+      metrics.set(day, existing);
     });
-    return counts;
-  }, [transactions]);
+    return metrics;
+  }, [filteredTransactions]);
+
   
   const upcomingPaymentDates = React.useMemo(() => {
     return recurringPayments.map(p => {
         const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), p.dayOfMonth);
-        // Ensure we only mark future or today's bills that are in the currently viewed month
         if (isSameMonth(date, currentMonth) && (isFuture(date) || isToday(date))) {
             return date;
         }
@@ -228,35 +260,48 @@ export function CalendarClient() {
   }, [recurringPayments, currentMonth]);
 
 
-  const getTransactionCountLevel = (day: Date) => {
+  const getLevel = (day: Date) => {
     const dayString = format(day, "yyyy-MM-dd");
-    const count = dailyTransactionCounts.get(dayString);
-    if (!count || count === 0) return 0;
-    if (count === 1) return 1;
-    if (count === 2) return 2;
-    if (count === 3) return 3;
-    if (count === 4) return 4;
-    return 5;
+    const metric = dailyMetrics.get(dayString);
+    if (!metric) return 0;
+    
+    if (viewMode === 'count') {
+        if (metric.count === 0) return 0;
+        if (metric.count === 1) return 1;
+        if (metric.count === 2) return 2;
+        if (metric.count === 3) return 3;
+        if (metric.count === 4) return 4;
+        return 5;
+    } else { // amount
+        if (metric.amount === 0) return 0;
+        if (metric.amount < 50) return 1;
+        if (metric.amount < 100) return 2;
+        if (metric.amount < 250) return 3;
+        if (metric.amount < 500) return 4;
+        return 5;
+    }
   };
   
   const modifiers = {
     ...Object.fromEntries(
       Array.from({ length: 5 }, (_, i) => i + 1).map((level) => [
-        `count-${level}`,
-        (day: Date) => getTransactionCountLevel(day) === level,
+        `level-${level}`,
+        (day: Date) => getLevel(day) === level,
       ])
     ),
     recurring: (day: Date) => upcomingPaymentDates.some(d => isSameDay(d, day))
   };
   
   const modifierClassNames = {
-    'count-1': 'bg-blue-300/60 text-blue-900 dark:bg-blue-900/40 dark:text-blue-100',
-    'count-2': 'bg-green-300/60 text-green-900 dark:bg-green-800/40 dark:text-green-100',
-    'count-3': 'bg-orange-300/60 text-orange-900 dark:bg-orange-800/40 dark:text-orange-100',
-    'count-4': 'bg-pink-300/60 text-pink-900 dark:bg-pink-800/40 dark:text-pink-100',
-    'count-5': 'bg-red-300/60 text-red-900 dark:bg-red-800/40 dark:text-white font-bold',
+    'level-1': viewMode === 'count' ? 'bg-blue-300/60 text-blue-900 dark:bg-blue-900/40 dark:text-blue-100' : 'bg-sky-200/60 text-sky-900 dark:bg-sky-900/40 dark:text-sky-100',
+    'level-2': viewMode === 'count' ? 'bg-green-300/60 text-green-900 dark:bg-green-800/40 dark:text-green-100' : 'bg-teal-300/60 text-teal-900 dark:bg-teal-800/40 dark:text-teal-100',
+    'level-3': viewMode === 'count' ? 'bg-orange-300/60 text-orange-900 dark:bg-orange-800/40 dark:text-orange-100' : 'bg-yellow-300/60 text-yellow-900 dark:bg-yellow-800/40 dark:text-yellow-100',
+    'level-4': viewMode === 'count' ? 'bg-pink-300/60 text-pink-900 dark:bg-pink-800/40 dark:text-pink-100' : 'bg-orange-400/60 text-orange-900 dark:bg-orange-700/40 dark:text-orange-100',
+    'level-5': viewMode === 'count' ? 'bg-red-300/60 text-red-900 dark:bg-red-800/40 dark:text-white font-bold' : 'bg-red-400/60 text-red-900 dark:bg-red-700/40 dark:text-white font-bold',
     recurring: 'relative before:content-[""] before:absolute before:bottom-1.5 before:left-1/2 before:-translate-x-1/2 before:h-1.5 before:w-1.5 before:rounded-full before:bg-primary'
   };
+
+  const legendItems = viewMode === 'count' ? countLegend : amountLegend;
 
   if (!isInitialized) {
     return (
@@ -282,10 +327,43 @@ export function CalendarClient() {
         <CardHeader>
           <CardTitle>Spending Calendar</CardTitle>
           <CardDescription>
-            Visualize your daily transaction frequency. Colors indicate more transactions. Dots indicate upcoming bills.
-            Click a day to see its details.
+            Visualize daily spending by amount or transaction count. Filter by category and click a day for details.
           </CardDescription>
         </CardHeader>
+        <CardContent className="flex flex-col sm:flex-row items-center gap-4">
+           <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "count" | "amount")} className="w-full sm:w-auto">
+                <TabsList>
+                    <TabsTrigger value="count">By Transaction Count</TabsTrigger>
+                    <TabsTrigger value="amount">By Spending Amount</TabsTrigger>
+                </TabsList>
+            </Tabs>
+
+             <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="w-full sm:w-auto sm:ml-auto">
+                        <ListFilter className="mr-2 h-4 w-4" />
+                        Filter Categories
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56">
+                    <DropdownMenuLabel>Show Categories</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <ScrollArea className="h-48">
+                        {categories.map((category) => (
+                        <DropdownMenuCheckboxItem
+                            key={category}
+                            checked={selectedCategories[category]}
+                            onCheckedChange={(checked) => {
+                                setSelectedCategories(prev => ({ ...prev, [category]: checked }));
+                            }}
+                        >
+                            {category}
+                        </DropdownMenuCheckboxItem>
+                        ))}
+                    </ScrollArea>
+                </DropdownMenuContent>
+            </DropdownMenu>
+        </CardContent>
       </Card>
 
       <Card>
@@ -301,15 +379,15 @@ export function CalendarClient() {
             className="w-full max-w-2xl"
           />
         </CardContent>
-         <CardFooter className="flex-col items-start gap-2 text-sm">
+         <CardFooter className="flex-col items-start gap-3 text-sm">
             <p className="font-medium">Legend</p>
-            <div className="flex items-center gap-4 text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-muted-foreground">
                 <div className="flex items-center gap-2">
                     <div className="h-4 w-4 rounded-full bg-primary" />
                     <span>Upcoming Bill</span>
                 </div>
                 <div className="flex items-center gap-2">
-                    <span className="font-semibold">Transactions:</span>
+                    <span className="font-semibold">{viewMode === 'count' ? "Transactions:" : "Amount Spent:"}</span>
                     {legendItems.map(item => (
                         <div key={item.label} className="flex items-center gap-1.5">
                             <span className={`h-4 w-4 rounded-sm ${item.className}`}></span>
@@ -327,6 +405,7 @@ export function CalendarClient() {
             setViewingTransaction(t);
             setSelectedDay(null); // Close sheet to open dialog
         }}
+        filteredTransactions={filteredTransactions}
       />
       
       <TransactionDetailsDialog 
