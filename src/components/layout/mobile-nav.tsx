@@ -1,16 +1,18 @@
+
 "use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Receipt, Wallet, Sparkles, Repeat } from "lucide-react";
+import { LayoutDashboard, Receipt, Wallet, Sparkles, Repeat, Coins } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/transactions", label: "Transactions", icon: Receipt },
+  { href: "/income", label: "Income", icon: Coins },
   { href: "/budgets", label: "Budgets", icon: Wallet },
   { href: "/recurring", label: "Recurring", icon: Repeat },
-  { href: "/insights", label: "Insights", icon: Sparkles },
+  // { href: "/insights", label: "Insights", icon: Sparkles },
 ];
 
 export function MobileNav() {

@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -10,6 +11,7 @@ import {
   Sparkles,
   Wallet,
   Repeat,
+  Coins,
 } from "lucide-react";
 
 import {
@@ -27,6 +29,7 @@ const navItems = [
   { href: "/transactions", label: "Transactions", icon: Receipt },
   { href: "/budgets", label: "Budgets", icon: Wallet },
   { href: "/recurring", label: "Recurring", icon: Repeat },
+  { href: "/income", label: "Income", icon: Coins },
   { href: "/insights", label: "Insights", icon: Sparkles },
 ];
 

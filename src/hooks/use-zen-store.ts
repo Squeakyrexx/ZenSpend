@@ -2,10 +2,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import type { Transaction, Budget, Category, RecurringPayment } from "@/lib/types";
+import type { Transaction, Budget, Category, RecurringPayment, Income, IncomeFrequency } from "@/lib/types";
 import { DEFAULT_BUDGETS } from "@/lib/data";
 import { useToast } from "./use-toast";
-import { isSameMonth, isPast } from "date-fns";
+import { isSameMonth, isPast, getWeeksInMonth, startOfMonth, addDays, eachDayOfInterval, startOfWeek, isFriday } from "date-fns";
 
 const useLocalStorage = <T,>(key: string, initialValue: T) => {
   const [storedValue, setStoredValue] = useState<T>(() => {
@@ -40,6 +40,7 @@ export const useZenStore = () => {
   const [transactions, setTransactions] = useLocalStorage<Transaction[]>("zen-transactions", []);
   const [budgets, setBudgets] = useLocalStorage<Budget[]>("zen-budgets", DEFAULT_BUDGETS);
   const [recurringPayments, setRecurringPayments] = useLocalStorage<RecurringPayment[]>("zen-recurring-payments", []);
+  const [incomes, setIncomes] = useLocalStorage<Income[]>("zen-incomes", []);
   const [isInitialized, setIsInitialized] = useState(false);
   const { toast } = useToast();
 
@@ -52,6 +53,7 @@ export const useZenStore = () => {
     }
   }, [isInitialized]);
 
+  // --- TRANSACTIONS ---
   const addTransaction = useCallback((transaction: Transaction) => {
       setTransactions(prev => [transaction, ...prev]);
     }, [setTransactions]
@@ -65,6 +67,7 @@ export const useZenStore = () => {
     setTransactions(prev => prev.filter(t => t.id !== transactionId));
   }, [setTransactions]);
 
+  // --- BUDGETS & CATEGORIES ---
   const updateBudgetLimit = useCallback((category: Category, newLimit: number) => {
       setBudgets(prev => 
         prev.map(budget => 
@@ -83,9 +86,11 @@ export const useZenStore = () => {
   const deleteCategory = useCallback((category: Category) => {
       setBudgets(prev => prev.filter(b => b.category !== category));
       setTransactions(prev => prev.filter(t => t.category !== category));
-    }, [setBudgets, setTransactions]
+      setRecurringPayments(prev => prev.filter(p => p.category !== category));
+    }, [setBudgets, setTransactions, setRecurringPayments]
   );
   
+  // --- RECURRING PAYMENTS ---
   const addRecurringPayment = useCallback((payment: Omit<RecurringPayment, 'id'>) => {
       const newPayment = { ...payment, id: new Date().toISOString() + Math.random(), lastLogged: null };
       setRecurringPayments(prev => [...prev, newPayment]);
@@ -99,20 +104,38 @@ export const useZenStore = () => {
     setRecurringPayments(prev => prev.filter(p => p.id !== paymentId));
   }, [setRecurringPayments]);
 
+  // --- INCOME ---
+  const addIncome = useCallback((income: Omit<Income, 'id'>) => {
+    const newIncome = { ...income, id: new Date().toISOString() + Math.random() };
+    setIncomes(prev => [...prev, newIncome]);
+  }, [setIncomes]);
+
+  const updateIncome = useCallback((incomeId: string, updates: Partial<Omit<Income, 'id'>>) => {
+    setIncomes(prev => prev.map(i => i.id === incomeId ? { ...i, ...updates } : i));
+  }, [setIncomes]);
+
+  const deleteIncome = useCallback((incomeId: string) => {
+    setIncomes(prev => prev.filter(i => i.id !== incomeId));
+  }, [setIncomes]);
+  
 
   const resetData = useCallback(() => {
       setTransactions([]);
       setBudgets(DEFAULT_BUDGETS);
       setRecurringPayments([]);
-    }, [setTransactions, setBudgets, setRecurringPayments]
+      setIncomes([]);
+    }, [setTransactions, setBudgets, setRecurringPayments, setIncomes]
   );
   
   // Recalculate budget spent amounts whenever transactions change
   useEffect(() => {
     if(isInitialized) {
+        const startOfCurrentMonth = startOfMonth(new Date());
+        const monthlyTransactions = transactions.filter(t => isSameMonth(new Date(t.date), startOfCurrentMonth));
+
         const newBudgets = budgets.map(b => ({...b, spent: 0}));
         
-        transactions.forEach(t => {
+        monthlyTransactions.forEach(t => {
             const budget = newBudgets.find(b => b.category === t.category);
             if (budget) {
                 budget.spent += t.amount;
@@ -163,6 +186,34 @@ export const useZenStore = () => {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isInitialized]);
+  
+  const calculateMonthlyIncome = useCallback(() => {
+    const today = new Date();
+    const start = startOfMonth(today);
+    const end = eachDayOfInterval({ start, end: today }).pop()!;
+    let totalIncome = 0;
+
+    incomes.forEach(income => {
+        const incomeStartDate = new Date(income.startDate);
+        if (income.frequency === 'one-time') {
+            if (isSameMonth(incomeStartDate, today)) {
+                totalIncome += income.amount;
+            }
+        } else if (incomeStartDate <= end) {
+             if (income.frequency === 'monthly') {
+                totalIncome += income.amount;
+            } else if (income.frequency === 'weekly') {
+                const weeksInMonth = getWeeksInMonth(today);
+                totalIncome += income.amount * weeksInMonth;
+            } else if (income.frequency === 'bi-weekly') {
+                 // A simple approximation: 2 checks a month. A more complex implementation could track specific paydays.
+                 totalIncome += income.amount * 2;
+            }
+        }
+    });
+
+    return totalIncome;
+  }, [incomes]);
 
 
   return { 
@@ -171,6 +222,7 @@ export const useZenStore = () => {
     categories,
     categoryIcons,
     recurringPayments,
+    incomes,
     addTransaction,
     updateTransaction,
     deleteTransaction,
@@ -180,6 +232,10 @@ export const useZenStore = () => {
     addRecurringPayment,
     updateRecurringPayment,
     deleteRecurringPayment,
+    addIncome,
+    updateIncome,
+    deleteIncome,
+    calculateMonthlyIncome,
     resetData, 
     isInitialized 
   };

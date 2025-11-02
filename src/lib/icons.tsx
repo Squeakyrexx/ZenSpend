@@ -1,3 +1,4 @@
+
 import {
   type LucideProps,
   Home,
@@ -29,7 +30,8 @@ import {
   Utensils,
   Pizza,
   Repeat,
-  LayoutDashboard
+  LayoutDashboard,
+  Coins
 } from "lucide-react";
 
 export const ICONS = [
@@ -62,6 +64,7 @@ export const ICONS = [
   "Pizza",
   "Repeat",
   "LayoutDashboard",
+  "Coins",
 ] as const;
 
 export type IconName = (typeof ICONS)[number];
@@ -99,7 +102,8 @@ const icons: IconsType = {
   Utensils,
   Pizza,
   Repeat,
-  LayoutDashboard
+  LayoutDashboard,
+  Coins,
 };
 
 interface IconProps extends LucideProps {

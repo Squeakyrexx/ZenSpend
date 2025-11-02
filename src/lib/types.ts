@@ -1,3 +1,4 @@
+
 export let CATEGORIES = [
   'Food & Drink',
   'Transportation',
@@ -37,4 +38,14 @@ export interface RecurringPayment {
   icon: string;
   dayOfMonth: number;
   lastLogged: string | null; // ISO string
+}
+
+export type IncomeFrequency = 'weekly' | 'bi-weekly' | 'monthly' | 'one-time';
+
+export interface Income {
+  id: string;
+  description: string;
+  amount: number;
+  frequency: IncomeFrequency;
+  startDate: string; // ISO string for fixed, date of income for one-time
 }
