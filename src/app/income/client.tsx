@@ -54,11 +54,13 @@ function AddIncomeDialog({
   onOpenChange,
   onConfirm,
   incomeToEdit,
+  incomeType,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: (income: Omit<Income, "id">) => void;
-  incomeToEdit: Omit<Income, "id"> | null;
+  incomeToEdit: Income | null;
+  incomeType: 'fixed' | 'one-time';
 }) {
   const [description, setDescription] = React.useState("");
   const [amount, setAmount] = React.useState(0);
@@ -74,9 +76,9 @@ function AddIncomeDialog({
     } else {
       setDescription("");
       setAmount(0);
-      setFrequency("");
+      setFrequency(incomeType === 'one-time' ? 'one-time' : '');
     }
-  }, [incomeToEdit, open]);
+  }, [incomeToEdit, open, incomeType]);
 
   const handleAmountConfirm = (value: number) => {
     if (value > 0) {
@@ -112,7 +114,12 @@ function AddIncomeDialog({
   };
   
   const title = incomeToEdit ? "Edit Income Source" : "Add Income Source";
-  const descriptionText = incomeToEdit ? "Update the details of this income source." : "Add a new source of income, like a salary or a side hustle.";
+  const descriptionText = incomeToEdit ? "Update the details of this income source." : `Add a new ${incomeType === 'one-time' ? 'one-time' : 'fixed'} source of income.`;
+
+  const isEditingFixed = incomeToEdit && incomeToEdit.frequency !== 'one-time';
+  const isEditingOneTime = incomeToEdit && incomeToEdit.frequency === 'one-time';
+  const showFrequencySelector = !isEditingOneTime && incomeType !== 'one-time';
+
 
   return (
     <>
@@ -129,7 +136,11 @@ function AddIncomeDialog({
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="e.g. Monthly Salary, Etsy Shop"
+                placeholder={
+                  incomeType === 'one-time' 
+                    ? "e.g. Side Gig, Freelance Work"
+                    : "e.g. Monthly Salary, Etsy Shop"
+                }
               />
             </div>
             <div className="space-y-2">
@@ -142,23 +153,24 @@ function AddIncomeDialog({
                 {amount > 0 ? `$${amount.toFixed(2)}` : "Set Amount"}
               </Button>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="frequency">Frequency</Label>
-              <Select
-                onValueChange={(value: IncomeFrequency) => setFrequency(value)}
-                value={frequency}
-              >
-                <SelectTrigger id="frequency">
-                  <SelectValue placeholder="Select a frequency" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="one-time">One-Time</SelectItem>
-                  <SelectItem value="weekly">Weekly</SelectItem>
-                  <SelectItem value="bi-weekly">Bi-Weekly</SelectItem>
-                  <SelectItem value="monthly">Monthly</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {showFrequencySelector && (
+              <div className="space-y-2">
+                <Label htmlFor="frequency">Frequency</Label>
+                <Select
+                  onValueChange={(value: IncomeFrequency) => setFrequency(value)}
+                  value={frequency}
+                >
+                  <SelectTrigger id="frequency">
+                    <SelectValue placeholder="Select a frequency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="weekly">Weekly</SelectItem>
+                    <SelectItem value="bi-weekly">Bi-Weekly</SelectItem>
+                    <SelectItem value="monthly">Monthly</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <DialogClose asChild>
@@ -243,6 +255,7 @@ export function IncomeClient() {
   const { incomes, addIncome, updateIncome, deleteIncome, isInitialized } = useZenStore();
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [incomeToEdit, setIncomeToEdit] = React.useState<Income | null>(null);
+  const [incomeType, setIncomeType] = React.useState<'fixed' | 'one-time'>('fixed');
 
   const { toast } = useToast();
 
@@ -264,6 +277,7 @@ export function IncomeClient() {
   };
 
   const handleEdit = (income: Income) => {
+    setIncomeType(income.frequency === 'one-time' ? 'one-time' : 'fixed');
     setIncomeToEdit(income);
     setIsFormOpen(true);
   };
@@ -282,6 +296,12 @@ export function IncomeClient() {
       setIncomeToEdit(null);
     }
   };
+
+  const handleAddClick = (type: 'fixed' | 'one-time') => {
+    setIncomeType(type);
+    setIncomeToEdit(null);
+    setIsFormOpen(true);
+  }
 
   const fixedIncomes = incomes.filter(i => i.frequency !== 'one-time');
   const oneTimeIncomes = incomes.filter(i => i.frequency === 'one-time');
@@ -358,7 +378,7 @@ export function IncomeClient() {
                 ))}
                  <Card className="border-dashed border-2 hover:border-primary hover:text-primary transition-colors flex items-center justify-center min-h-[250px]">
                     <CardHeader className="text-center">
-                        <Button variant="ghost" className="w-full h-full text-lg" onClick={() => setIsFormOpen(true)}>
+                        <Button variant="ghost" className="w-full h-full text-lg" onClick={() => handleAddClick('fixed')}>
                             <PlusCircle className="mr-2 h-6 w-6"/>
                             Add Fixed Income
                         </Button>
@@ -382,7 +402,7 @@ export function IncomeClient() {
                 ))}
                  <Card className="border-dashed border-2 hover:border-primary hover:text-primary transition-colors flex items-center justify-center min-h-[250px]">
                     <CardHeader className="text-center">
-                        <Button variant="ghost" className="w-full h-full text-lg" onClick={() => setIsFormOpen(true)}>
+                        <Button variant="ghost" className="w-full h-full text-lg" onClick={() => handleAddClick('one-time')}>
                             <PlusCircle className="mr-2 h-6 w-6"/>
                             Add One-Time Income
                         </Button>
@@ -397,6 +417,7 @@ export function IncomeClient() {
         onOpenChange={handleOpenChange}
         onConfirm={handleConfirm}
         incomeToEdit={incomeToEdit}
+        incomeType={incomeType}
       />
     </div>
   );
