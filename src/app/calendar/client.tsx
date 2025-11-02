@@ -137,9 +137,10 @@ function DailyTransactionsSheet({
 }
 
 const legendItems = [
-  { label: '1', className: 'bg-violet-200/60 dark:bg-violet-900/40' },
-  { label: '2', className: 'bg-blue-200/60 dark:bg-blue-900/40' },
-  { label: '3-4', className: 'bg-green-200/60 dark:bg-green-800/40' },
+  { label: '1', className: 'bg-blue-200/60 dark:bg-blue-900/40' },
+  { label: '2', className: 'bg-green-200/60 dark:bg-green-800/40' },
+  { label: '3', className: 'bg-orange-300/60 dark:bg-orange-800/40' },
+  { label: '4', className: 'bg-pink-300/60 dark:bg-pink-800/40' },
   { label: '5+', className: 'bg-red-300/60 dark:bg-red-800/40' },
 ];
 
@@ -178,13 +179,14 @@ export function CalendarClient() {
     if (!count || count === 0) return 0;
     if (count === 1) return 1;
     if (count === 2) return 2;
-    if (count <= 4) return 3;
-    return 4;
+    if (count === 3) return 3;
+    if (count === 4) return 4;
+    return 5;
   };
   
   const modifiers = {
     ...Object.fromEntries(
-      Array.from({ length: 4 }, (_, i) => i + 1).map((level) => [
+      Array.from({ length: 5 }, (_, i) => i + 1).map((level) => [
         `count-${level}`,
         (day: Date) => getTransactionCountLevel(day) === level,
       ])
@@ -193,10 +195,11 @@ export function CalendarClient() {
   };
   
   const modifierClassNames = {
-    'count-1': 'bg-violet-200/60 text-violet-900 dark:bg-violet-900/40 dark:text-violet-100',
-    'count-2': 'bg-blue-200/60 text-blue-900 dark:bg-blue-900/40 dark:text-blue-100',
-    'count-3': 'bg-green-200/60 text-green-900 dark:bg-green-800/40 dark:text-green-100',
-    'count-4': 'bg-red-300/60 text-red-900 dark:bg-red-800/40 dark:text-white font-bold',
+    'count-1': 'bg-blue-200/60 text-blue-900 dark:bg-blue-900/40 dark:text-blue-100',
+    'count-2': 'bg-green-200/60 text-green-900 dark:bg-green-800/40 dark:text-green-100',
+    'count-3': 'bg-orange-300/60 text-orange-900 dark:bg-orange-800/40 dark:text-orange-100',
+    'count-4': 'bg-pink-300/60 text-pink-900 dark:bg-pink-800/40 dark:text-pink-100',
+    'count-5': 'bg-red-300/60 text-red-900 dark:bg-red-800/40 dark:text-white font-bold',
     recurring: 'relative before:content-[""] before:absolute before:bottom-1.5 before:left-1/2 before:-translate-x-1/2 before:h-1.5 before:w-1.5 before:rounded-full before:bg-primary'
   };
 
@@ -288,7 +291,3 @@ export function CalendarClient() {
     </div>
   );
 }
-
-    
-
-    
