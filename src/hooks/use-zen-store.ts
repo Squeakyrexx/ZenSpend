@@ -155,10 +155,10 @@ export const useZenStore = () => {
     if (isInitialized) {
       const today = new Date();
       const newTransactions: Transaction[] = [];
-      const updatedRecurringPayments = [...recurringPayments];
-      let budgetsNeedUpdate = false;
+      const paymentsToUpdate = [...recurringPayments];
+      let needsStateUpdate = false;
   
-      updatedRecurringPayments.forEach((p, index) => {
+      paymentsToUpdate.forEach((p, index) => {
         const dueDate = new Date(today.getFullYear(), today.getMonth(), p.dayOfMonth);
         const lastLoggedDate = p.lastLogged ? new Date(p.lastLogged) : null;
   
@@ -172,8 +172,8 @@ export const useZenStore = () => {
             date: dueDate.toISOString(),
           };
           newTransactions.push(newTransaction);
-          updatedRecurringPayments[index] = { ...p, lastLogged: today.toISOString() };
-          budgetsNeedUpdate = true;
+          paymentsToUpdate[index] = { ...p, lastLogged: today.toISOString() };
+          needsStateUpdate = true;
           
           toast({
             title: "Recurring Payment Logged",
@@ -182,40 +182,34 @@ export const useZenStore = () => {
         }
       });
       
-      if (newTransactions.length > 0) {
-        // Update transactions state
+      if (needsStateUpdate) {
+        setRecurringPayments(paymentsToUpdate);
         setTransactions(prev => [...newTransactions, ...prev]);
-        
-        // Update recurring payments state
-        setRecurringPayments(updatedRecurringPayments);
-  
-        // And now, also update the budgets state immediately
-        const newBudgets = [...budgets];
-        newTransactions.forEach(t => {
-            const budget = newBudgets.find(b => b.category === t.category);
-            if (budget) {
-                budget.spent += t.amount;
-            }
+        setInternalBudgets(prevBudgets => {
+            const newBudgets = [...prevBudgets];
+             newTransactions.forEach(t => {
+                const budget = newBudgets.find(b => b.category === t.category);
+                if (budget) {
+                    budget.spent += t.amount;
+                }
+            });
+            return newBudgets;
         });
-        setInternalBudgets(newBudgets);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isInitialized, setTransactions, setRecurringPayments, setInternalBudgets]);
+  }, [isInitialized]);
   
   const calculateMonthlyIncome = useCallback(() => {
     const today = new Date();
-    const startOfCurrentMonth = startOfMonth(today);
     let totalIncome = 0;
   
     incomes.forEach(income => {
         const incomeStartDate = new Date(income.startDate);
   
-        // Only consider income sources that have started
         if (incomeStartDate <= today) {
             if (income.frequency === 'one-time') {
-                // Only include one-time income if it occurred in the current month
-                if (isSameMonth(incomeStartDate, startOfCurrentMonth)) {
+                if (isSameMonth(incomeStartDate, today)) {
                     totalIncome += income.amount;
                 }
             } else if (income.frequency === 'monthly') {
@@ -235,14 +229,23 @@ export const useZenStore = () => {
     const today = new Date();
     const startOfCurrentMonth = startOfMonth(today);
 
+    // This calculation now implicitly includes recurring payments because they are added to transactions
     const oneTimeExpenses = transactions
         .filter(t => isSameMonth(new Date(t.date), startOfCurrentMonth))
         .reduce((sum, t) => sum + t.amount, 0);
 
-    const recurringExpenses = recurringPayments.reduce((sum, p) => sum + p.amount, 0);
+    const recurringExpenseTotal = recurringPayments.reduce((sum, p) => sum + p.amount, 0);
     
-    return oneTimeExpenses + recurringExpenses;
-  }, [transactions, recurringPayments]);
+    // We get the transactions for the current month, and sum those.
+    // Then we add the sum of all recurring payments, since they are expected for the month.
+    // However, this leads to double counting if the recurring payment has already been logged.
+    
+    const monthlyTransactionsTotal = transactions
+        .filter(t => isSameMonth(new Date(t.date), startOfCurrentMonth))
+        .reduce((sum, t) => sum + t.amount, 0);
+
+    return monthlyTransactionsTotal;
+  }, [transactions]);
 
 
   return { 
