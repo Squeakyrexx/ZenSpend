@@ -44,7 +44,7 @@ Transaction Data:
 - Amount: {{amount}}, Description: {{description}}, Category: {{category}}, Date: {{date}}
 {{/each}}
 
-Insights:`, // Added Handlebars each block
+Also provide a short progress summary of what you have generated.`,
 });
 
 const generateSpendingInsightsFlow = ai.defineFlow(
@@ -56,10 +56,12 @@ const generateSpendingInsightsFlow = ai.defineFlow(
   async input => {
     const {output} = await prompt(input);
     // Add a summary of what was generated
-    const progress = 'Generated AI-powered spending insights based on transaction history.';
+    if (!output?.progress) {
+      output!.progress = 'Generated AI-powered spending insights based on transaction history.';
+    }
     return {
       insights: output?.insights || [],
-      progress,
+      progress: output?.progress || '',
     };
   }
 );
