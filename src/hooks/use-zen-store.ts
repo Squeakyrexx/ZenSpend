@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 import type { Transaction, Budget, Category, RecurringPayment, Income, IncomeFrequency } from "@/lib/types";
 import { DEFAULT_BUDGETS } from "@/lib/data";
 import { useToast } from "./use-toast";
-import { isSameMonth, isPast, getWeeksInMonth, startOfMonth, addDays, eachDayOfInterval, startOfWeek, isFriday } from "date-fns";
+import { isSameMonth, isPast, startOfMonth, getDaysInMonth } from "date-fns";
 
 const useLocalStorage = <T,>(key: string, initialValue: T) => {
   const [storedValue, setStoredValue] = useState<T>(() => {
@@ -195,20 +195,18 @@ export const useZenStore = () => {
     incomes.forEach(income => {
         const incomeStartDate = new Date(income.startDate);
 
-        // Only consider incomes that have started and are relevant for the current month
         if (isSameMonth(incomeStartDate, startOfCurrentMonth) || incomeStartDate < startOfCurrentMonth) {
             if (income.frequency === 'one-time') {
-                // Include one-time incomes that happened this month
                 if (isSameMonth(incomeStartDate, startOfCurrentMonth)) {
                     totalIncome += income.amount;
                 }
             } else if (income.frequency === 'monthly') {
                 totalIncome += income.amount;
             } else if (income.frequency === 'weekly') {
-                const weeksInMonth = getWeeksInMonth(startOfCurrentMonth);
+                const daysInMonth = getDaysInMonth(startOfCurrentMonth);
+                const weeksInMonth = daysInMonth / 7;
                 totalIncome += income.amount * weeksInMonth;
             } else if (income.frequency === 'bi-weekly') {
-                 // A simple approximation: 2 checks a month.
                  totalIncome += income.amount * 2;
             }
         }
