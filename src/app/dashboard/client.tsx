@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Icon } from '@/lib/icons.tsx';
-import { format, differenceInDays, isPast, addMonths, subMonths, startOfMonth, eachDayOfInterval, startOfToday } from 'date-fns';
+import { format, differenceInDays, isPast, addMonths, subMonths, startOfToday, eachDayOfInterval, endOfToday } from 'date-fns';
 import {
   Area,
   AreaChart,
@@ -33,14 +33,6 @@ import { Loader2, Sparkles, ArrowDown, ArrowUp, ArrowRight, BellRing } from 'luc
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
-
-const chartConfig = {
-  total: {
-    label: 'Spending',
-    color: 'hsl(var(--chart-1))',
-  },
-} satisfies ChartConfig;
-
 
 function MonthlySummaryCard({ income, expenses }: { income: number; expenses: number }) {
     const netFlow = income - expenses;
@@ -152,26 +144,49 @@ export function DashboardClient() {
         .slice(0, 3);
   }, [budgets]);
 
-  const dailySpending = React.useMemo(() => {
-    const today = startOfToday();
+  const {chartData, chartConfig} = React.useMemo(() => {
+    const today = endOfToday();
     const last30Days = eachDayOfInterval({
       start: subMonths(today, 1),
       end: today
     });
 
-    const spendingMap = new Map(last30Days.map(day => [format(day, 'yyyy-MM-dd'), 0]));
+    const categoryColors: Record<string, string> = {
+      'Food & Drink': 'hsl(var(--chart-1))',
+      'Transportation': 'hsl(var(--chart-2))',
+      'Entertainment': 'hsl(var(--chart-3))',
+      'Essentials': 'hsl(var(--chart-4))',
+      'Shopping': 'hsl(var(--chart-5))',
+      'Misc': 'hsl(var(--muted-foreground))'
+    };
+    
+    const dynamicChartConfig: ChartConfig = budgets.reduce((acc, budget) => {
+      acc[budget.category] = {
+        label: budget.category,
+        color: categoryColors[budget.category] || `hsl(${Math.random() * 360}, 45%, 65%)`
+      };
+      return acc;
+    }, {} as ChartConfig);
+
+    const spendingMap = new Map(last30Days.map(day => {
+        const entry: {[key: string]: any} = { date: format(day, 'yyyy-MM-dd') };
+        categories.forEach(cat => entry[cat] = 0);
+        return [format(day, 'yyyy-MM-dd'), entry];
+    }));
 
     transactions.forEach(t => {
       const transactionDate = format(new Date(t.date), 'yyyy-MM-dd');
       if (spendingMap.has(transactionDate)) {
-        spendingMap.set(transactionDate, (spendingMap.get(transactionDate) || 0) + t.amount);
+          const dayData = spendingMap.get(transactionDate)!;
+          dayData[t.category] = (dayData[t.category] || 0) + t.amount;
       }
     });
     
-    return Array.from(spendingMap.entries())
-      .map(([date, total]) => ({ date, total }))
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  }, [transactions]);
+    return {
+        chartData: Array.from(spendingMap.values()).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
+        chartConfig: dynamicChartConfig
+    }
+  }, [transactions, budgets, categories]);
 
     const { monthlyIncome, monthlyExpenses } = React.useMemo(() => {
     const income = calculateMonthlyIncome();
@@ -270,7 +285,7 @@ export function DashboardClient() {
                         <ChartContainer config={chartConfig} className="min-h-[250px] w-full">
                            <AreaChart
                               accessibilityLayer
-                              data={dailySpending}
+                              data={chartData}
                               margin={{
                                 left: 0,
                                 right: 12,
@@ -279,10 +294,12 @@ export function DashboardClient() {
                               }}
                             >
                              <defs>
-                                <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="var(--color-total)" stopOpacity={0.8}/>
-                                    <stop offset="95%" stopColor="var(--color-total)" stopOpacity={0}/>
-                                </linearGradient>
+                                {Object.keys(chartConfig).map(key => (
+                                     <linearGradient key={key} id={`color-${key}`} x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor={`var(--color-${key})`} stopOpacity={0.8}/>
+                                        <stop offset="95%" stopColor={`var(--color-${key})`} stopOpacity={0}/>
+                                    </linearGradient>
+                                ))}
                             </defs>
                               <YAxis
                                 stroke="hsl(var(--muted-foreground))"
@@ -306,13 +323,16 @@ export function DashboardClient() {
                                     indicator="dot" 
                                 />}
                               />
-                              <Area
-                                dataKey="total"
-                                type="monotone"
-                                fill="url(#colorTotal)"
-                                stroke="var(--color-total)"
-                                stackId="a"
-                              />
+                               {Object.keys(chartConfig).map(key => (
+                                <Area
+                                    key={key}
+                                    dataKey={key}
+                                    type="monotone"
+                                    fill={`url(#color-${key})`}
+                                    stroke={`var(--color-${key})`}
+                                    stackId="a"
+                                />
+                               ))}
                             </AreaChart>
                         </ChartContainer>
                     ) : (
