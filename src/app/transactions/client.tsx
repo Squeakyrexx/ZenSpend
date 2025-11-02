@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -61,7 +62,7 @@ import { DateRange } from "react-day-picker";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 
 
-function EditTransactionDialog({
+export function EditTransactionDialog({
   open,
   onOpenChange,
   onConfirm,
