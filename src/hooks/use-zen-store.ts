@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -84,6 +85,10 @@ export const useZenStore = () => {
       const newPayment = { ...payment, id: new Date().toISOString() + Math.random() };
       setRecurringPayments(prev => [...prev, newPayment]);
   }, [setRecurringPayments]);
+
+  const updateRecurringPayment = useCallback((paymentId: string, updates: Omit<RecurringPayment, 'id'>) => {
+    setRecurringPayments(prev => prev.map(p => p.id === paymentId ? { ...p, ...updates } : p));
+  }, [setRecurringPayments]);
   
   const deleteRecurringPayment = useCallback((paymentId: string) => {
     setRecurringPayments(prev => prev.filter(p => p.id !== paymentId));
@@ -127,6 +132,7 @@ export const useZenStore = () => {
     deleteCategory,
     updateBudgetLimit, 
     addRecurringPayment,
+    updateRecurringPayment,
     deleteRecurringPayment,
     resetData, 
     isInitialized 

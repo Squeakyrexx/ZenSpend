@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -7,6 +8,7 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -20,14 +22,6 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   Select,
   SelectContent,
@@ -52,7 +46,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { CalendarIcon, PlusCircle, Trash2 } from "lucide-react";
+import { CalendarIcon, Pencil, PlusCircle, Trash2 } from "lucide-react";
 import { Icon } from "@/lib/icons.tsx";
 import { NumpadDialog } from "@/components/ui/numpad-dialog";
 import { Calendar } from "@/components/ui/calendar";
@@ -63,11 +57,13 @@ import { cn } from "@/lib/utils";
 function AddRecurringPaymentDialog({
   open,
   onOpenChange,
-  onAddPayment,
+  onConfirm,
+  paymentToEdit
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAddPayment: (payment: Omit<RecurringPayment, "id">) => void;
+  onConfirm: (payment: Omit<RecurringPayment, "id">) => void;
+  paymentToEdit: Omit<RecurringPayment, 'id'> | null;
 }) {
   const { categories, categoryIcons } = useZenStore();
   const [description, setDescription] = React.useState("");
@@ -77,6 +73,24 @@ function AddRecurringPaymentDialog({
   const [isNumpadOpen, setIsNumpadOpen] = React.useState(false);
 
   const { toast } = useToast();
+
+  React.useEffect(() => {
+    if (paymentToEdit) {
+      setDescription(paymentToEdit.description);
+      setAmount(paymentToEdit.amount);
+      setCategory(paymentToEdit.category);
+      // Create a date object just to represent the day
+      const newDate = new Date();
+      newDate.setDate(paymentToEdit.dayOfMonth);
+      setDate(newDate);
+    } else {
+      // Reset form when adding a new payment
+      setDescription("");
+      setAmount(0);
+      setCategory("");
+      setDate(undefined);
+    }
+  }, [paymentToEdit, open]);
 
   const handleAmountConfirm = (value: number) => {
     if (value > 0) {
@@ -110,7 +124,7 @@ function AddRecurringPaymentDialog({
       return;
     }
 
-    onAddPayment({
+    onConfirm({
       description,
       amount: amount,
       category,
@@ -119,21 +133,18 @@ function AddRecurringPaymentDialog({
     });
 
     onOpenChange(false);
-    setDescription("");
-    setAmount(0);
-    setCategory("");
-    setDate(undefined);
   };
+
+  const title = paymentToEdit ? "Edit Recurring Payment" : "Add Recurring Payment";
+  const descriptionText = paymentToEdit ? "Update the details of your recurring payment." : "Add a bill or subscription that occurs regularly.";
 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Recurring Payment</DialogTitle>
-            <DialogDescription>
-              Add a bill or subscription that occurs regularly.
-            </DialogDescription>
+            <DialogTitle>{title}</DialogTitle>
+            <DialogDescription>{descriptionText}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -201,7 +212,7 @@ function AddRecurringPaymentDialog({
             <DialogClose asChild>
               <Button variant="outline">Cancel</Button>
             </DialogClose>
-            <Button onClick={handleSubmit}>Add Payment</Button>
+            <Button onClick={handleSubmit}>{paymentToEdit ? 'Save Changes' : 'Add Payment'}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -217,17 +228,90 @@ function AddRecurringPaymentDialog({
   );
 }
 
+function PaymentCard({ 
+    payment,
+    onEdit,
+    onDelete,
+}: { 
+    payment: RecurringPayment;
+    onEdit: (payment: RecurringPayment) => void;
+    onDelete: (payment: RecurringPayment) => void;
+}) {
+
+    const getOrdinal = (n: number) => {
+        const s = ["th", "st", "nd", "rd"];
+        const v = n % 100;
+        return n + (s[(v - 20) % 10] || s[v] || s[0]);
+    }
+    
+    return (
+        <Card className="hover:border-primary/50 transition-colors flex flex-col">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-3">
+                    <Icon name={payment.icon} className="h-8 w-8" />
+                    {payment.description}
+                </CardTitle>
+                <CardDescription>{payment.category}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2 flex-grow">
+                <p className="text-3xl font-bold">${payment.amount.toFixed(2)}</p>
+                <p className="text-muted-foreground">Due on the {getOrdinal(payment.dayOfMonth)} of each month.</p>
+            </CardContent>
+            <CardFooter className="flex gap-2 pt-4">
+                <Button variant="outline" className="w-full" onClick={() => onEdit(payment)}>
+                    <Pencil className="mr-2 h-4 w-4" /> Edit
+                </Button>
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="icon">
+                            <Trash2 className="h-4 w-4"/>
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This will permanently delete the "{payment.description}" recurring payment.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => onDelete(payment)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </CardFooter>
+        </Card>
+    );
+}
+
 export function RecurringPaymentsClient() {
-  const { recurringPayments, addRecurringPayment, deleteRecurringPayment, isInitialized } = useZenStore();
-  const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
+  const { recurringPayments, addRecurringPayment, deleteRecurringPayment, updateRecurringPayment, isInitialized } = useZenStore();
+  const [isFormOpen, setIsFormOpen] = React.useState(false);
+  const [paymentToEdit, setPaymentToEdit] = React.useState<RecurringPayment | null>(null);
+
   const { toast } = useToast();
 
-  const handleAddPayment = (payment: Omit<RecurringPayment, "id">) => {
-    addRecurringPayment(payment);
-    toast({
-      title: "Recurring Payment Added",
-      description: `"${payment.description}" has been added to your recurring payments.`,
-    });
+  const handleConfirm = (paymentData: Omit<RecurringPayment, "id">) => {
+    if (paymentToEdit) {
+      updateRecurringPayment(paymentToEdit.id, paymentData);
+      toast({
+        title: "Payment Updated",
+        description: `"${paymentData.description}" has been updated.`,
+      });
+    } else {
+      addRecurringPayment(paymentData);
+      toast({
+        title: "Recurring Payment Added",
+        description: `"${paymentData.description}" has been added.`,
+      });
+    }
+    setPaymentToEdit(null);
+  };
+
+  const handleEdit = (payment: RecurringPayment) => {
+    setPaymentToEdit(payment);
+    setIsFormOpen(true);
   };
 
   const handleDeletePayment = (payment: RecurringPayment) => {
@@ -238,31 +322,39 @@ export function RecurringPaymentsClient() {
     });
   };
   
-  const getOrdinal = (n: number) => {
-    const s = ["th", "st", "nd", "rd"];
-    const v = n % 100;
-    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+  const handleOpenChange = (open: boolean) => {
+      setIsFormOpen(open);
+      if (!open) {
+          setPaymentToEdit(null);
+      }
   }
+
 
   if (!isInitialized) {
     return (
       <div className="p-4 md:p-8">
-        <Card>
+        <Card className="mb-6">
           <CardHeader>
             <Skeleton className="h-8 w-1/3" />
             <Skeleton className="h-4 w-2/3" />
           </CardHeader>
-          <CardContent>
-             <Skeleton className="h-10 w-32 mb-4" />
-            <div className="space-y-2">
-              {[...Array(3)].map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
-            </div>
-          </CardContent>
         </Card>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {[...Array(3)].map((_, i) => (
+            <Card key={i}>
+                <CardHeader><Skeleton className="h-6 w-1/2" /></CardHeader>
+                <CardContent className="space-y-4">
+                    <Skeleton className="h-8 w-1/3" />
+                    <Skeleton className="h-4 w-full" />
+                </CardContent>
+                <CardFooter>
+                    <Skeleton className="h-9 w-full" />
+                </CardFooter>
+            </Card>
+          ))}
+        </div>
       </div>
-    );
+    )
   }
 
   return (
@@ -271,82 +363,36 @@ export function RecurringPaymentsClient() {
         <CardHeader>
           <CardTitle>Recurring Payments</CardTitle>
           <CardDescription>
-            Manage your regular bills and subscriptions.
+            Manage your regular bills, subscriptions, and other fixed expenses.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Button onClick={() => setIsAddDialogOpen(true)}>
-            <PlusCircle className="mr-2 h-4 w-4" /> Add Payment
-          </Button>
-        </CardContent>
       </Card>
       
-      <Card>
-        <CardContent className="p-0">
-         {recurringPayments.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Due Date</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                  <TableHead className="w-[100px] text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {recurringPayments.sort((a, b) => a.dayOfMonth - b.dayOfMonth).map((payment) => (
-                  <TableRow key={payment.id}>
-                    <TableCell className="font-medium flex items-center gap-3">
-                        <Icon name={payment.icon} className="h-5 w-5 text-muted-foreground" />
-                        {payment.description}
-                    </TableCell>
-                    <TableCell>{payment.category}</TableCell>
-                    <TableCell>The {getOrdinal(payment.dayOfMonth)}</TableCell>
-                    <TableCell className="text-right font-semibold">${payment.amount.toFixed(2)}</TableCell>
-                    <TableCell className="text-right">
-                       <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="text-destructive/80 hover:text-destructive">
-                                    <Trash2 className="h-4 w-4"/>
-                                </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        This will permanently delete the "{payment.description}" recurring payment.
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDeletePayment(payment)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <div className="text-center py-12 px-4">
-              <p className="text-lg font-semibold">No recurring payments yet.</p>
-              <p className="text-muted-foreground">
-                Add a bill or subscription to get started.
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {recurringPayments.sort((a, b) => a.dayOfMonth - b.dayOfMonth).map((payment) => (
+              <PaymentCard 
+                key={payment.id} 
+                payment={payment}
+                onEdit={handleEdit}
+                onDelete={handleDeletePayment}
+             />
+          ))}
+         <Card className="border-dashed border-2 hover:border-primary hover:text-primary transition-colors flex items-center justify-center min-h-[250px]">
+            <CardHeader className="text-center">
+                <Button variant="ghost" className="w-full h-full text-lg" onClick={() => setIsFormOpen(true)}>
+                    <PlusCircle className="mr-2 h-6 w-6"/>
+                    Add Payment
+                </Button>
+            </CardHeader>
+        </Card>
+      </div>
 
       <AddRecurringPaymentDialog
-        open={isAddDialogOpen}
-        onOpenChange={setIsAddDialogOpen}
-        onAddPayment={handleAddPayment}
+        open={isFormOpen}
+        onOpenChange={handleOpenChange}
+        onConfirm={handleConfirm}
+        paymentToEdit={paymentToEdit}
       />
     </div>
   );
 }
-
-    
