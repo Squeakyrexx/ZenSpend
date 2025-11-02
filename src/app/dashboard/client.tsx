@@ -12,7 +12,9 @@ import {
 } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Icon } from '@/lib/icons.tsx';
-import { format, differenceInDays, isPast, addMonths, subMonths, eachDayOfInterval, endOfToday } from 'date-fns';
+import { differenceInDays, isPast, addMonths, subMonths, eachDayOfInterval, endOfToday } from 'date-fns';
+import { format as formatTz, toDate } from 'date-fns-tz';
+import { format } from 'date-fns';
 import {
   Bar,
   BarChart,
@@ -162,18 +164,24 @@ export function DashboardClient() {
       };
       return acc;
     }, {} as ChartConfig);
+    
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
     const spendingMap = new Map(last30Days.map(day => {
-        const entry: {[key: string]: any} = { date: format(day, 'yyyy-MM-dd') };
+        const dayString = formatTz(day, 'yyyy-MM-dd', { timeZone });
+        const entry: {[key: string]: any} = { date: dayString };
         activeCategories.forEach(cat => entry[cat] = 0);
-        return [format(day, 'yyyy-MM-dd'), entry];
+        return [dayString, entry];
     }));
 
     activeTransactions.forEach(t => {
       if (!dynamicChartConfig[t.category]) return;
-      const transactionDate = format(new Date(t.date), 'yyyy-MM-dd');
-      if (spendingMap.has(transactionDate)) {
-          const dayData = spendingMap.get(transactionDate)!;
+      
+      const transactionDate = toDate(t.date, { timeZone });
+      const transactionDayString = formatTz(transactionDate, 'yyyy-MM-dd', { timeZone });
+
+      if (spendingMap.has(transactionDayString)) {
+          const dayData = spendingMap.get(transactionDayString)!;
           dayData[t.category] = (dayData[t.category] || 0) + t.amount;
       }
     });
@@ -224,7 +232,7 @@ export function DashboardClient() {
     <div className="p-4 md:p-8 space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="text-4xl">Welcome Back!</CardTitle>
+          <CardTitle className="text-4xl font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">Welcome Back!</CardTitle>
           <CardDescription>
             Here's a quick overview of your financial world.
           </CardDescription>
@@ -302,12 +310,12 @@ export function DashboardClient() {
                                 fontSize={12}
                                 tickLine={false}
                                 axisLine={false}
-                                tickFormatter={(value) => format(new Date(value), 'MMM d')}
+                                tickFormatter={(value) => format(toDate(value), 'MMM d')}
                               />
                               <ChartTooltip
                                 cursor={true}
                                 content={<ChartTooltipContent 
-                                    labelFormatter={(label) => format(new Date(label), 'PPP')}
+                                    labelFormatter={(label) => format(toDate(label), 'PPP')}
                                     indicator="dot" 
                                 />}
                               />
