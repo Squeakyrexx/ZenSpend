@@ -28,7 +28,7 @@ import {
 import type { ChartConfig } from '@/components/ui/chart';
 import { Button } from '@/components/ui/button';
 import { getInsights } from '../actions';
-import { Loader2, Sparkles, ArrowDown, ArrowUp, ArrowRight } from 'lucide-react';
+import { Loader2, Sparkles, ArrowDown, ArrowUp, ArrowRight, BellRing } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -66,6 +66,35 @@ function MonthlySummaryCard({ income, expenses }: { income: number; expenses: nu
                         {isPositive ? <ArrowUp className="h-5 w-5"/> : <ArrowDown className="h-5 w-5"/>}
                         <span>${Math.abs(netFlow).toFixed(2)}</span>
                     </div>
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
+function UpcomingBillReminder({ upcomingPayments }: { upcomingPayments: any[] }) {
+    const reminderPayments = upcomingPayments.filter(p => p.daysUntilDue <= 7);
+
+    if (reminderPayments.length === 0) {
+        return null;
+    }
+
+    const payment = reminderPayments[0]; // Show the most imminent bill
+
+    return (
+        <Card className="bg-secondary/30 border-primary/20">
+            <CardContent className="p-4">
+                <div className="flex items-center gap-4">
+                    <BellRing className="h-8 w-8 text-primary flex-shrink-0" />
+                    <div>
+                        <h3 className="font-bold text-lg">Heads Up!</h3>
+                        <p className="text-muted-foreground">
+                            Your <span className="font-semibold text-foreground">{payment.description}</span> bill of <span className="font-semibold text-foreground">${payment.amount.toFixed(2)}</span> is due {payment.daysUntilDue === 0 ? 'today' : `in ${payment.daysUntilDue} day${payment.daysUntilDue > 1 ? 's' : ''}`}.
+                        </p>
+                    </div>
+                     <Button asChild size="sm" className="ml-auto">
+                        <Link href="/recurring">View All</Link>
+                    </Button>
                 </div>
             </CardContent>
         </Card>
@@ -189,6 +218,8 @@ export function DashboardClient() {
           </CardDescription>
         </CardHeader>
       </Card>
+
+      <UpcomingBillReminder upcomingPayments={upcomingPayments} />
       
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <MonthlySummaryCard income={monthlyIncome} expenses={monthlyExpenses} />
