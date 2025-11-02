@@ -11,10 +11,10 @@ import {
 } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Icon } from '@/lib/icons.tsx';
-import { format, differenceInDays, isPast, addMonths, subMonths, startOfMonth, endOfMonth } from 'date-fns';
+import { format, differenceInDays, isPast, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, startOfToday } from 'date-fns';
 import {
-  Bar,
-  BarChart,
+  Line,
+  LineChart,
   ResponsiveContainer,
   XAxis,
   YAxis,
@@ -34,7 +34,7 @@ import Link from 'next/link';
 
 const chartConfig = {
   total: {
-    label: 'Total',
+    label: 'Spending',
     color: 'hsl(var(--chart-1))',
   },
 } satisfies ChartConfig;
@@ -123,14 +123,25 @@ export function DashboardClient() {
         .slice(0, 3);
   }, [budgets]);
 
-  const spendingByCategory = React.useMemo(() => {
-    const categoryMap: { [key: string]: number } = {};
-    transactions.forEach((t) => {
-      categoryMap[t.category] = (categoryMap[t.category] || 0) + t.amount;
+  const dailySpending = React.useMemo(() => {
+    const today = startOfToday();
+    const last30Days = eachDayOfInterval({
+      start: subMonths(today, 1),
+      end: today
     });
-    return Object.entries(categoryMap)
-      .map(([name, total]) => ({ name, total }))
-      .sort((a, b) => b.total - a.total);
+
+    const spendingMap = new Map(last30Days.map(day => [format(day, 'yyyy-MM-dd'), 0]));
+
+    transactions.forEach(t => {
+      const transactionDate = format(new Date(t.date), 'yyyy-MM-dd');
+      if (spendingMap.has(transactionDate)) {
+        spendingMap.set(transactionDate, (spendingMap.get(transactionDate) || 0) + t.amount);
+      }
+    });
+    
+    return Array.from(spendingMap.entries())
+      .map(([date, total]) => ({ date, total }))
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }, [transactions]);
 
   const { currentMonthSpending, previousMonthSpending } = React.useMemo(() => {
@@ -237,33 +248,49 @@ export function DashboardClient() {
 
       <div className="grid gap-8 md:grid-cols-5">
         <div className="md:col-span-3 space-y-4">
-            <h2 className="text-2xl font-bold">Spending Breakdown</h2>
+            <h2 className="text-2xl font-bold">Cash Flow (Last 30 Days)</h2>
             <Card>
                 <CardContent className="p-4">
                      {transactions.length > 0 ? (
                         <ChartContainer config={chartConfig} className="min-h-[250px] w-full">
-                            <BarChart accessibilityLayer data={spendingByCategory}>
-                                <XAxis
-                                dataKey="name"
-                                stroke="hsl(var(--muted-foreground))"
-                                fontSize={12}
-                                tickLine={false}
-                                axisLine={false}
-                                interval={0}
-                                />
-                                <YAxis
+                           <LineChart
+                              accessibilityLayer
+                              data={dailySpending}
+                              margin={{
+                                left: 12,
+                                right: 12,
+                              }}
+                            >
+                              <YAxis
                                 stroke="hsl(var(--muted-foreground))"
                                 fontSize={12}
                                 tickLine={false}
                                 axisLine={false}
                                 tickFormatter={(value) => `$${value}`}
-                                />
-                                <ChartTooltip 
-                                    cursor={false}
-                                    content={<ChartTooltipContent />} 
-                                />
-                                <Bar dataKey="total" fill="var(--color-total)" radius={4} />
-                            </BarChart>
+                              />
+                              <XAxis
+                                dataKey="date"
+                                stroke="hsl(var(--muted-foreground))"
+                                fontSize={12}
+                                tickLine={false}
+                                axisLine={false}
+                                tickFormatter={(value) => format(new Date(value), 'MMM d')}
+                              />
+                              <ChartTooltip
+                                cursor={false}
+                                content={<ChartTooltipContent 
+                                    labelFormatter={(label) => format(new Date(label), 'PPP')}
+                                    indicator="dot" 
+                                />}
+                              />
+                              <Line
+                                dataKey="total"
+                                type="natural"
+                                stroke="var(--color-total)"
+                                strokeWidth={2}
+                                dot={false}
+                              />
+                            </LineChart>
                         </ChartContainer>
                     ) : (
                         <div className="text-center py-12">

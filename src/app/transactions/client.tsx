@@ -56,7 +56,9 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
+import { format, isWithinInterval } from "date-fns";
+import { DateRange } from "react-day-picker";
+import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 
 
 function EditTransactionDialog({
@@ -225,6 +227,8 @@ export function TransactionsClient() {
   );
   const [editingTransaction, setEditingTransaction] = React.useState<Transaction | null>(null);
   const [deletingTransaction, setDeletingTransaction] = React.useState<Transaction | null>(null);
+  const [dateRange, setDateRange] = React.useState<DateRange | undefined>(undefined);
+
 
   const { toast } = useToast();
 
@@ -257,7 +261,18 @@ export function TransactionsClient() {
   };
 
   const sortedTransactions = React.useMemo(() => {
-    return [...transactions].sort((a, b) => {
+    const filtered = transactions.filter(t => {
+      if (!dateRange || (!dateRange.from && !dateRange.to)) return true;
+      const transactionDate = new Date(t.date);
+      if (dateRange.from && dateRange.to) {
+        return isWithinInterval(transactionDate, { start: dateRange.from, end: dateRange.to });
+      }
+      if (dateRange.from) return transactionDate >= dateRange.from;
+      if (dateRange.to) return transactionDate <= dateRange.to;
+      return true;
+    });
+
+    return [...filtered].sort((a, b) => {
       let aVal = a[sortKey];
       let bVal = b[sortKey];
 
@@ -275,7 +290,7 @@ export function TransactionsClient() {
       }
       return sortDirection === "asc" ? comparison : -comparison;
     });
-  }, [transactions, sortKey, sortDirection]);
+  }, [transactions, sortKey, sortDirection, dateRange]);
 
   const renderSortArrow = (key: SortKey) => {
     if (sortKey !== key) return <ArrowUpDown className="ml-2 h-4 w-4" />;
@@ -309,11 +324,14 @@ export function TransactionsClient() {
   return (
     <div className="p-4 md:p-8 space-y-4 relative h-full">
       <Card>
-        <CardHeader>
-          <CardTitle>All Transactions</CardTitle>
-          <CardDescription>
-            A complete history of your spending.
-          </CardDescription>
+        <CardHeader className="flex-row items-center justify-between">
+          <div>
+            <CardTitle>All Transactions</CardTitle>
+            <CardDescription>
+              A complete history of your spending.
+            </CardDescription>
+          </div>
+          <DatePickerWithRange onUpdate={setDateRange} />
         </CardHeader>
         <CardContent>
           {transactions.length === 0 ? (
