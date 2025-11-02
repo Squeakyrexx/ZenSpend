@@ -70,7 +70,7 @@ export function SettingsClient() {
                   <AlertDialogDescription>
                     This action cannot be undone. This will permanently delete
                     all your data.
-                  </Aler  tDialogDescription>
+                  </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
