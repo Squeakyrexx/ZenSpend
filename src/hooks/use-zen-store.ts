@@ -150,7 +150,7 @@ export const useZenStore = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [transactions, isInitialized]);
   
-  // Check for due recurring payments
+    // Check for due recurring payments
   useEffect(() => {
     if (isInitialized) {
       const today = new Date();
@@ -158,43 +158,40 @@ export const useZenStore = () => {
       const updatedPayments = [...recurringPayments];
       let needsStateUpdate = false;
   
-      updatedPayments.forEach((p, index) => {
-        const dueDate = new Date(today.getFullYear(), today.getMonth(), p.dayOfMonth);
+      recurringPayments.forEach((p, index) => {
         const lastLoggedDate = p.lastLogged ? new Date(p.lastLogged) : null;
-  
-        if ((isPast(dueDate) || isToday(dueDate)) && (!lastLoggedDate || !isSameMonth(dueDate, lastLoggedDate))) {
-          const newTransaction: Transaction = {
-            id: `recurring-${p.id}-${new Date().toISOString()}`,
-            amount: p.amount,
-            description: p.description,
-            category: p.category,
-            icon: p.icon,
-            date: dueDate.toISOString(),
-          };
-          newTransactions.push(newTransaction);
-          updatedPayments[index] = { ...p, lastLogged: today.toISOString() };
-          needsStateUpdate = true;
-          
-          toast({
-            title: "Recurring Payment Logged",
-            description: `Automatically logged "${p.description}" for $${p.amount.toFixed(2)}.`,
-          });
+        
+        // Check if the payment has already been logged for the current month
+        if (lastLoggedDate && isSameMonth(lastLoggedDate, today)) {
+          return;
+        }
+
+        const dueDateInCurrentMonth = new Date(today.getFullYear(), today.getMonth(), p.dayOfMonth);
+
+        // Check if the due date for this month has passed or is today
+        if (isPast(dueDateInCurrentMonth) || isToday(dueDateInCurrentMonth)) {
+            const newTransaction: Transaction = {
+              id: `recurring-${p.id}-${new Date().toISOString()}`,
+              amount: p.amount,
+              description: p.description,
+              category: p.category,
+              icon: p.icon,
+              date: dueDateInCurrentMonth.toISOString(),
+            };
+            newTransactions.push(newTransaction);
+            updatedPayments[index] = { ...p, lastLogged: today.toISOString() };
+            needsStateUpdate = true;
+            
+            toast({
+              title: "Recurring Payment Logged",
+              description: `Automatically logged "${p.description}" for $${p.amount.toFixed(2)}.`,
+            });
         }
       });
       
       if (needsStateUpdate) {
-        setRecurringPayments(updatedPayments);
         setTransactions(prev => [...newTransactions, ...prev]);
-        setInternalBudgets(prevBudgets => {
-            const newBudgetsWithUpdates = [...prevBudgets];
-             newTransactions.forEach(t => {
-                const budgetIndex = newBudgetsWithUpdates.findIndex(b => b.category === t.category);
-                if (budgetIndex !== -1) {
-                    newBudgetsWithUpdates[budgetIndex].spent += t.amount;
-                }
-            });
-            return newBudgetsWithUpdates;
-        });
+        setRecurringPayments(updatedPayments);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
