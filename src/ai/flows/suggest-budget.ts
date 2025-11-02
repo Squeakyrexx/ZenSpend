@@ -12,7 +12,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const SuggestBudgetInputSchema = z.object({
+const SuggestBudgetInputSchema = z.object({
   income: z.number().describe('The total monthly income of the user.'),
   transactions: z.array(
     z.object({
@@ -25,7 +25,7 @@ export const SuggestBudgetInputSchema = z.object({
 });
 export type SuggestBudgetInput = z.infer<typeof SuggestBudgetInputSchema>;
 
-export const SuggestBudgetOutputSchema = z.record(z.string(), z.number())
+const SuggestBudgetOutputSchema = z.record(z.string(), z.number())
     .describe('An object where keys are category names and values are the suggested budget limits.');
 export type SuggestBudgetOutput = z.infer<typeof SuggestBudgetOutputSchema>;
 
