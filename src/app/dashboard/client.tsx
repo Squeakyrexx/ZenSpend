@@ -12,10 +12,10 @@ import {
 } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Icon } from '@/lib/icons.tsx';
-import { format, differenceInDays, isPast, addMonths, subMonths, startOfToday, eachDayOfInterval, endOfToday } from 'date-fns';
+import { format, differenceInDays, isPast, addMonths, subMonths, eachDayOfInterval, endOfToday } from 'date-fns';
 import {
-  Area,
-  AreaChart,
+  Bar,
+  BarChart,
   ResponsiveContainer,
   XAxis,
   YAxis,
@@ -274,7 +274,7 @@ export function DashboardClient() {
                 <CardContent className="p-4">
                      {transactions.length > 0 ? (
                         <ChartContainer config={chartConfig} className="min-h-[250px] w-full">
-                           <AreaChart
+                           <BarChart
                               accessibilityLayer
                               data={chartData}
                               margin={{
@@ -307,17 +307,15 @@ export function DashboardClient() {
                                 />}
                               />
                                {Object.keys(chartConfig).map(key => (
-                                <Area
+                                <Bar
                                     key={key}
                                     dataKey={key}
-                                    type="monotone"
-                                    fillOpacity={0.4}
                                     fill={`var(--color-${key})`}
-                                    stroke={`var(--color-${key})`}
                                     stackId="a"
+                                    radius={4}
                                 />
                                ))}
-                            </AreaChart>
+                            </BarChart>
                         </ChartContainer>
                     ) : (
                         <div className="text-center py-12">
