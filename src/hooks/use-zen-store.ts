@@ -133,11 +133,11 @@ export const useZenStore = () => {
   
   // Recalculate budget spent amounts whenever transactions change
   useEffect(() => {
-    if(isInitialized) {
-        setInternalBudgets(prevBudgets => {
-            const startOfCurrentMonth = startOfMonth(new Date());
-            const monthlyTransactions = transactions.filter(t => isSameMonth(new Date(t.date), startOfCurrentMonth));
+    if (isInitialized) {
+        const startOfCurrentMonth = startOfMonth(new Date());
+        const monthlyTransactions = transactions.filter(t => isSameMonth(new Date(t.date), startOfCurrentMonth));
 
+        setInternalBudgets(prevBudgets => {
             const newBudgets = prevBudgets.map(b => ({...b, spent: 0}));
             
             monthlyTransactions.forEach(t => {
@@ -158,48 +158,43 @@ export const useZenStore = () => {
   // Check for due recurring payments
   useEffect(() => {
     if (isInitialized) {
-      const today = new Date();
-      
-      setRecurringPayments(currentPayments => {
-        let newTransactions: Transaction[] = [];
-        const updatedPayments = currentPayments.map(p => {
-          const lastLoggedDate = p.lastLogged ? new Date(p.lastLogged) : null;
-          const dueDateInCurrentMonth = new Date(today.getFullYear(), today.getMonth(), p.dayOfMonth);
+        const today = new Date();
+        const newTransactions: Transaction[] = [];
+        let somethingChanged = false;
 
-          // Check if due and not logged this month
-          if ((isPast(dueDateInCurrentMonth) || isToday(dueDateInCurrentMonth)) && (!lastLoggedDate || !isSameMonth(lastLoggedDate, today))) {
-            const transaction: Transaction = {
-              id: `recurring-${p.id}-${dueDateInCurrentMonth.toISOString()}`,
-              amount: p.amount,
-              description: p.description,
-              category: p.category,
-              icon: p.icon,
-              date: dueDateInCurrentMonth.toISOString(),
-            };
-            newTransactions.push(transaction);
+        const updatedPayments = recurringPayments.map(p => {
+            const lastLoggedDate = p.lastLogged ? new Date(p.lastLogged) : null;
+            const dueDateInCurrentMonth = new Date(today.getFullYear(), today.getMonth(), p.dayOfMonth);
 
-            toast({
-              title: "Recurring Payment Logged",
-              description: `Automatically logged "${p.description}" for $${p.amount.toFixed(2)}.`,
-            });
-            
-            return { ...p, lastLogged: today.toISOString() };
-          }
-          return p;
+            // Check if due and not logged this month
+            if ((isPast(dueDateInCurrentMonth) || isToday(dueDateInCurrentMonth)) && (!lastLoggedDate || !isSameMonth(lastLoggedDate, today))) {
+                const transaction: Transaction = {
+                    id: `recurring-${p.id}-${dueDateInCurrentMonth.toISOString()}`,
+                    amount: p.amount,
+                    description: p.description,
+                    category: p.category,
+                    icon: p.icon,
+                    date: dueDateInCurrentMonth.toISOString(),
+                };
+                newTransactions.push(transaction);
+
+                toast({
+                    title: "Recurring Payment Logged",
+                    description: `Automatically logged "${p.description}" for $${p.amount.toFixed(2)}.`,
+                });
+                
+                somethingChanged = true;
+                return { ...p, lastLogged: today.toISOString() };
+            }
+            return p;
         });
 
-        if (newTransactions.length > 0) {
-            setTransactions(currentTransactions => [...newTransactions, ...currentTransactions]);
+        if (somethingChanged) {
+            setTransactions(current => [...newTransactions, ...current]);
+            setRecurringPayments(updatedPayments);
         }
-        
-        // Only update state if something changed
-        if (JSON.stringify(updatedPayments) !== JSON.stringify(currentPayments)) {
-            return updatedPayments;
-        }
-        return currentPayments;
-      });
     }
-  }, [isInitialized, setRecurringPayments, setTransactions, toast]);
+  }, [isInitialized]);
   
   const calculateMonthlyIncome = useCallback(() => {
     const today = new Date();
