@@ -21,6 +21,12 @@ const SuggestBudgetInputSchema = z.object({
       date: z.string(),
     })
   ).describe('An array of transaction objects from the past month.'),
+  recurringPayments: z.array(
+    z.object({
+      amount: z.number(),
+      category: z.string(),
+    })
+  ).describe('An array of recurring monthly payments.'),
   categories: z.array(z.string()).describe('An array of the users existing budget categories.'),
 });
 export type SuggestBudgetInput = z.infer<typeof SuggestBudgetInputSchema>;
@@ -41,13 +47,17 @@ export async function suggestBudget(input: SuggestBudgetInput): Promise<SuggestB
     name: 'suggestBudgetPrompt',
     input: {schema: SuggestBudgetInputSchema},
     output: {schema: SuggestBudgetOutputSchema},
-    prompt: `You are a helpful personal finance assistant. Your goal is to help a user create a reasonable monthly budget.
+    prompt: `You are a helpful and experienced personal finance assistant. Your goal is to help a user create a realistic and effective monthly budget.
 
-You will be given the user's total monthly income, their transaction history for the past month, and their existing list of budget categories.
+You will be given the user's total monthly income, their transaction history for the past month (discretionary spending), their list of fixed recurring monthly payments (like rent and subscriptions), and their existing list of budget categories.
 
-Analyze their income and spending patterns. A good budget should be realistic. Use their past spending in each category as a baseline, but also consider standard budgeting principles (like the 50/30/20 rule, but don't mention it explicitly).
+Your task is to analyze their income and spending patterns to suggest a reasonable budget limit for each category.
 
-Based on your analysis, provide a suggested monthly budget limit for each of the user's categories. The sum of all suggested budget limits should not exceed their monthly income.
+Here's your process:
+1.  First, account for the fixed costs from the recurring payments. These are non-negotiable monthly expenses.
+2.  Next, analyze the discretionary spending from the past month's transactions. Identify trends and areas where spending is high.
+3.  For each category, propose a budget limit. For categories with recurring payments, the budget should be at least the sum of those payments. For discretionary categories, use their past spending as a baseline, but suggest a realistic limit. Don't just copy the past spending; suggest a rounded, sensible number that encourages mindful spending without being overly restrictive.
+4.  The SUM of all suggested budget limits should NOT exceed the user's monthly income. Leave a small buffer if possible.
 
 User's Monthly Income: {{{income}}}
 
@@ -56,12 +66,17 @@ User's Categories:
 - {{this}}
 {{/each}}
 
-Past Month's Transactions:
+Fixed Recurring Payments (this month):
+{{#each recurringPayments}}
+- Category: {{category}}, Amount: {{amount}}
+{{/each}}
+
+Discretionary Spending (past month):
 {{#each transactions}}
 - Category: {{category}}, Amount: {{amount}}
 {{/each}}
 
-Return the suggestions as a JSON object where the keys are the category names and the values are the suggested numerical budget limits. IMPORTANT: The JSON keys must be the exact category names provided. Make sure to enclose any category names that contain spaces or special characters in double quotes.
+Return the suggestions as a JSON object where the keys are the category names and the values are the suggested numerical budget limits (use whole numbers). IMPORTANT: The JSON keys must be the exact category names provided. Make sure to enclose any category names that contain spaces or special characters in double quotes.
 `,
   });
 

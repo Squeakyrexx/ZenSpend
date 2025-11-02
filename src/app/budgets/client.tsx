@@ -261,7 +261,7 @@ function AddCategoryDialog({
 }
 
 function AiBudgetCard() {
-  const { budgets, transactions, calculateMonthlyIncome, setBudgets, categories, categoryIcons } = useZenStore();
+  const { budgets, transactions, recurringPayments, calculateMonthlyIncome, setBudgets, categories, categoryIcons } = useZenStore();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = React.useState(false);
   const [suggestions, setSuggestions] = React.useState<Record<string, number> | null>(null);
@@ -271,7 +271,7 @@ function AiBudgetCard() {
     setSuggestions(null);
     const income = calculateMonthlyIncome();
 
-    const result = await getBudgetSuggestions(income, transactions, categories);
+    const result = await getBudgetSuggestions(income, transactions, recurringPayments, categories);
     setIsLoading(false);
 
     if (result && 'error' in result) {

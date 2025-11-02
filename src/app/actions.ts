@@ -4,7 +4,7 @@
 import { extractTransactionDetails } from "@/ai/flows/extract-transaction-details";
 import { generateSpendingInsights } from "@/ai/flows/generate-spending-insights";
 import { suggestBudget } from "@/ai/flows/suggest-budget";
-import type { Transaction, Category } from "@/lib/types";
+import type { Transaction, Category, Budget, RecurringPayment } from "@/lib/types";
 
 export async function parseTransactionDescription(
   descriptionText: string,
@@ -34,12 +34,12 @@ export async function parseTransactionDescription(
   }
 }
 
-export async function getInsights(transactions: Transaction[], categories: Category[]) {
+export async function getInsights(transactions: Transaction[], categories: Category[], budgets: Budget[]) {
   try {
     if (transactions.length === 0) {
         return { insights: [] };
     }
-    const result = await generateSpendingInsights({ transactions, categories });
+    const result = await generateSpendingInsights({ transactions, categories, budgets });
     return result;
   } catch(e) {
     console.error(e);
@@ -50,16 +50,17 @@ export async function getInsights(transactions: Transaction[], categories: Categ
 export async function getBudgetSuggestions(
   income: number,
   transactions: Transaction[],
+  recurringPayments: RecurringPayment[],
   categories: Category[]
 ) {
   try {
     if (income <= 0) {
       return { error: "Please set your income to get budget suggestions." };
     }
-    if (transactions.length === 0) {
-      return { error: "You need some recent transactions for the AI to analyze." };
+    if (transactions.length === 0 && recurringPayments.length === 0) {
+      return { error: "You need some recent transactions or recurring payments for the AI to analyze." };
     }
-    const result = await suggestBudget({ income, transactions, categories });
+    const result = await suggestBudget({ income, transactions, recurringPayments, categories });
     return result;
   } catch (e) {
     console.error(e);
