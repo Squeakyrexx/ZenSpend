@@ -63,7 +63,7 @@ function AddRecurringPaymentDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: (payment: Omit<RecurringPayment, "id">) => void;
-  paymentToEdit: Omit<RecurringPayment, 'id'> | null;
+  paymentToEdit: RecurringPayment | null;
 }) {
   const { categories, categoryIcons } = useZenStore();
   const [description, setDescription] = React.useState("");
@@ -369,7 +369,7 @@ export function RecurringPaymentsClient() {
       </Card>
       
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {recurringPayments.sort((a, b) => a.dayOfMonth - b.dayOfMonth).map((payment) => (
+          {(recurringPayments || []).sort((a, b) => a.dayOfMonth - b.dayOfMonth).map((payment) => (
               <PaymentCard 
                 key={payment.id} 
                 payment={payment}
