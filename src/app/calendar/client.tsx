@@ -137,10 +137,10 @@ function DailyTransactionsSheet({
 }
 
 const legendItems = [
-  { label: '1', className: 'bg-purple-200/50 dark:bg-purple-900/30' },
-  { label: '2', className: 'bg-purple-300/60 dark:bg-purple-800/40' },
-  { label: '3-4', className: 'bg-purple-400/70 dark:bg-purple-700/50' },
-  { label: '5+', className: 'bg-purple-500/80 dark:bg-purple-600/60' },
+  { label: '1', className: 'bg-blue-200/60 dark:bg-blue-900/40' },
+  { label: '2', className: 'bg-green-200/60 dark:bg-green-900/40' },
+  { label: '3-4', className: 'bg-yellow-200/60 dark:bg-yellow-800/40' },
+  { label: '5+', className: 'bg-red-300/60 dark:bg-red-800/40' },
 ];
 
 export function CalendarClient() {
@@ -193,11 +193,11 @@ export function CalendarClient() {
   };
   
   const modifierClassNames = {
-    'count-1': 'bg-purple-200/50 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200',
-    'count-2': 'bg-purple-300/60 text-purple-900 dark:bg-purple-800/40 dark:text-purple-100',
-    'count-3': 'bg-purple-400/70 text-purple-900 dark:bg-purple-700/50 dark:text-white',
-    'count-4': 'bg-purple-500/80 text-white dark:bg-purple-600/80 dark:text-white font-bold',
-    recurring: 'relative before:content-[""] before:absolute before:bottom-1.5 before:left-1/2 before:-translate-x-1/2 before:h-1.5 before:w-1.5 before:rounded-full before:bg-green-500'
+    'count-1': 'bg-blue-200/60 text-blue-900 dark:bg-blue-900/40 dark:text-blue-100',
+    'count-2': 'bg-green-200/60 text-green-900 dark:bg-green-900/40 dark:text-green-100',
+    'count-3': 'bg-yellow-200/60 text-yellow-900 dark:bg-yellow-800/40 dark:text-yellow-100',
+    'count-4': 'bg-red-300/60 text-red-900 dark:bg-red-800/40 dark:text-white font-bold',
+    recurring: 'relative before:content-[""] before:absolute before:bottom-1.5 before:left-1/2 before:-translate-x-1/2 before:h-1.5 before:w-1.5 before:rounded-full before:bg-primary'
   };
 
   const handleEditConfirm = (transactionId: string, updates: Partial<Transaction>) => {
@@ -232,7 +232,7 @@ export function CalendarClient() {
         <CardHeader>
           <CardTitle>Spending Calendar</CardTitle>
           <CardDescription>
-            Visualize your daily transaction frequency. Darker days mean more transactions. Dots indicate upcoming bills.
+            Visualize your daily transaction frequency. Colors indicate more transactions. Dots indicate upcoming bills.
             Click a day to see its details.
           </CardDescription>
         </CardHeader>
@@ -255,7 +255,7 @@ export function CalendarClient() {
             <p className="font-medium">Legend</p>
             <div className="flex items-center gap-4 text-muted-foreground">
                 <div className="flex items-center gap-2">
-                    <div className="h-4 w-4 rounded-full bg-green-500" />
+                    <div className="h-4 w-4 rounded-full bg-primary" />
                     <span>Upcoming Bill</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -288,3 +288,5 @@ export function CalendarClient() {
     </div>
   );
 }
+
+    
