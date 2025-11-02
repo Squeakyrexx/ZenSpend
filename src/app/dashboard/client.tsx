@@ -13,8 +13,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Icon } from '@/lib/icons.tsx';
 import { format, differenceInDays, isPast, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, startOfToday } from 'date-fns';
 import {
-  Line,
-  LineChart,
+  Area,
+  AreaChart,
   ResponsiveContainer,
   XAxis,
   YAxis,
@@ -253,14 +253,22 @@ export function DashboardClient() {
                 <CardContent className="p-4">
                      {transactions.length > 0 ? (
                         <ChartContainer config={chartConfig} className="min-h-[250px] w-full">
-                           <LineChart
+                           <AreaChart
                               accessibilityLayer
                               data={dailySpending}
                               margin={{
-                                left: 12,
+                                left: 0,
                                 right: 12,
+                                top: 10,
+                                bottom: 0,
                               }}
                             >
+                             <defs>
+                                <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="var(--color-total)" stopOpacity={0.8}/>
+                                    <stop offset="95%" stopColor="var(--color-total)" stopOpacity={0}/>
+                                </linearGradient>
+                            </defs>
                               <YAxis
                                 stroke="hsl(var(--muted-foreground))"
                                 fontSize={12}
@@ -277,20 +285,20 @@ export function DashboardClient() {
                                 tickFormatter={(value) => format(new Date(value), 'MMM d')}
                               />
                               <ChartTooltip
-                                cursor={false}
+                                cursor={true}
                                 content={<ChartTooltipContent 
                                     labelFormatter={(label) => format(new Date(label), 'PPP')}
                                     indicator="dot" 
                                 />}
                               />
-                              <Line
+                              <Area
                                 dataKey="total"
                                 type="natural"
+                                fill="url(#colorTotal)"
                                 stroke="var(--color-total)"
-                                strokeWidth={2}
-                                dot={false}
+                                stackId="a"
                               />
-                            </LineChart>
+                            </AreaChart>
                         </ChartContainer>
                     ) : (
                         <div className="text-center py-12">
