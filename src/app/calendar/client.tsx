@@ -10,6 +10,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -135,6 +136,13 @@ function DailyTransactionsSheet({
   );
 }
 
+const legendItems = [
+  { label: '1', className: 'bg-purple-200/50 dark:bg-purple-900/30' },
+  { label: '2', className: 'bg-purple-300/60 dark:bg-purple-800/40' },
+  { label: '3-4', className: 'bg-purple-400/70 dark:bg-purple-700/50' },
+  { label: '5+', className: 'bg-purple-500/80 dark:bg-purple-600/60' },
+];
+
 export function CalendarClient() {
   const { transactions, isInitialized, updateTransaction, recurringPayments } = useZenStore();
   const [currentMonth, setCurrentMonth] = React.useState(new Date());
@@ -143,23 +151,14 @@ export function CalendarClient() {
 
   const { toast } = useToast();
 
-  const dailyTotals = React.useMemo(() => {
-    const totals = new Map<string, number>();
+  const dailyTransactionCounts = React.useMemo(() => {
+    const counts = new Map<string, number>();
     transactions.forEach((t) => {
       const day = format(new Date(t.date), "yyyy-MM-dd");
-      totals.set(day, (totals.get(day) || 0) + t.amount);
+      counts.set(day, (counts.get(day) || 0) + 1);
     });
-    return totals;
+    return counts;
   }, [transactions]);
-
-  const maxSpendingInMonth = React.useMemo(() => {
-    const start = startOfMonth(currentMonth);
-    const totalsInMonth = Array.from(dailyTotals.entries())
-      .filter(([day]) => isSameMonth(new Date(day), start))
-      .map(([, total]) => total);
-
-    return totalsInMonth.length > 0 ? Math.max(...totalsInMonth) : 1;
-  }, [dailyTotals, currentMonth]);
   
   const upcomingPaymentDates = React.useMemo(() => {
     return recurringPayments.map(p => {
@@ -173,37 +172,31 @@ export function CalendarClient() {
   }, [recurringPayments, currentMonth]);
 
 
-  const getSpendingLevel = (day: Date) => {
+  const getTransactionCountLevel = (day: Date) => {
     const dayString = format(day, "yyyy-MM-dd");
-    const total = dailyTotals.get(dayString);
-    if (!total || total <= 0) return 0;
-    if (maxSpendingInMonth <= 0) return 1;
-
-    const percentage = (total / maxSpendingInMonth) * 100;
-    if (percentage === 0) return 0;
-    if (percentage < 20) return 1;
-    if (percentage < 40) return 2;
-    if (percentage < 60) return 3;
-    if (percentage < 80) return 4;
-    return 5;
+    const count = dailyTransactionCounts.get(dayString);
+    if (!count || count === 0) return 0;
+    if (count === 1) return 1;
+    if (count === 2) return 2;
+    if (count <= 4) return 3;
+    return 4;
   };
   
   const modifiers = {
     ...Object.fromEntries(
-      Array.from({ length: 5 }, (_, i) => i + 1).map((level) => [
-        `spending-${level}`,
-        (day: Date) => getSpendingLevel(day) === level,
+      Array.from({ length: 4 }, (_, i) => i + 1).map((level) => [
+        `count-${level}`,
+        (day: Date) => getTransactionCountLevel(day) === level,
       ])
     ),
     recurring: (day: Date) => upcomingPaymentDates.some(d => isSameDay(d, day))
   };
   
   const modifierClassNames = {
-    'spending-1': 'bg-purple-200/50 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200',
-    'spending-2': 'bg-purple-300/60 text-purple-900 dark:bg-purple-800/40 dark:text-purple-100',
-    'spending-3': 'bg-purple-400/70 text-purple-900 dark:bg-purple-700/50 dark:text-white',
-    'spending-4': 'bg-red-400/60 text-red-900 dark:bg-red-800/60 dark:text-white',
-    'spending-5': 'bg-red-500/80 text-white dark:bg-red-600/80 dark:text-white font-bold',
+    'count-1': 'bg-purple-200/50 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200',
+    'count-2': 'bg-purple-300/60 text-purple-900 dark:bg-purple-800/40 dark:text-purple-100',
+    'count-3': 'bg-purple-400/70 text-purple-900 dark:bg-purple-700/50 dark:text-white',
+    'count-4': 'bg-purple-500/80 text-white dark:bg-purple-600/80 dark:text-white font-bold',
     recurring: 'relative before:content-[""] before:absolute before:bottom-1.5 before:left-1/2 before:-translate-x-1/2 before:h-1.5 before:w-1.5 before:rounded-full before:bg-green-500'
   };
 
@@ -239,7 +232,7 @@ export function CalendarClient() {
         <CardHeader>
           <CardTitle>Spending Calendar</CardTitle>
           <CardDescription>
-            Visualize your daily spending. Darker days mean more spending. Dots indicate upcoming bills.
+            Visualize your daily transaction frequency. Darker days mean more transactions. Dots indicate upcoming bills.
             Click a day to see its details.
           </CardDescription>
         </CardHeader>
@@ -258,6 +251,24 @@ export function CalendarClient() {
             className="w-full max-w-2xl"
           />
         </CardContent>
+         <CardFooter className="flex-col items-start gap-2 text-sm">
+            <p className="font-medium">Legend</p>
+            <div className="flex items-center gap-4 text-muted-foreground">
+                <div className="flex items-center gap-2">
+                    <div className="h-4 w-4 rounded-full bg-green-500" />
+                    <span>Upcoming Bill</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <span className="font-semibold">Transactions:</span>
+                    {legendItems.map(item => (
+                        <div key={item.label} className="flex items-center gap-1.5">
+                            <span className={`h-4 w-4 rounded-sm ${item.className}`}></span>
+                            <span>{item.label}</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </CardFooter>
       </Card>
       <DailyTransactionsSheet
         selectedDay={selectedDay}
