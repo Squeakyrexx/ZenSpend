@@ -205,9 +205,7 @@ export const useZenStore = () => {
             } else if (income.frequency === 'monthly') {
                 totalIncome += income.amount;
             } else if (income.frequency === 'weekly') {
-                const daysInMonth = getDaysInMonth(startOfCurrentMonth);
-                const weeksInMonth = daysInMonth / 7;
-                totalIncome += income.amount * weeksInMonth;
+                totalIncome += income.amount * 4;
             } else if (income.frequency === 'bi-weekly') {
                  totalIncome += income.amount * 2; // Simplified for now
             }
