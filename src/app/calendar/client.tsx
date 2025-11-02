@@ -223,11 +223,14 @@ const amountLegend = [
 
 
 export function CalendarClient() {
-  const { transactions, isInitialized, recurringPayments, categories } = useZenStore();
+  const { transactions, isInitialized, recurringPayments, budgets } = useZenStore();
   const [currentMonth, setCurrentMonth] = React.useState(new Date());
   const [selectedDay, setSelectedDay] = React.useState<Date | null>(null);
   const [viewingTransaction, setViewingTransaction] = React.useState<Transaction | null>(null);
   const [viewMode, setViewMode] = React.useState<"count" | "amount">("count");
+  
+  const categories = React.useMemo(() => budgets.map(b => b.category), [budgets]);
+  
   const [selectedCategories, setSelectedCategories] = React.useState<Record<Category, boolean>>(
     () => Object.fromEntries(categories.map(c => [c, true]))
   );
@@ -420,5 +423,3 @@ export function CalendarClient() {
     </div>
   );
 }
-
-    
