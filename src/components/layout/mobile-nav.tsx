@@ -3,14 +3,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Receipt, Wallet, CalendarDays, Repeat, Coins } from "lucide-react";
+import { LayoutDashboard, Receipt, Wallet, CalendarDays, Repeat, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/transactions", label: "Transactions", icon: Receipt },
-  { href: "/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/budgets", label: "Budgets", icon: Wallet },
+  { href: "/insights", label: "Insights", icon: Sparkles },
   { href: "/recurring", label: "Recurring", icon: Repeat },
 ];
 
