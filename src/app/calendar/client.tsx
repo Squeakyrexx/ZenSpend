@@ -152,14 +152,14 @@ export function CalendarClient() {
     return totals;
   }, [transactions]);
 
-  const maxSpending = React.useMemo(() => {
+  const maxSpendingInMonth = React.useMemo(() => {
     const start = startOfMonth(currentMonth);
-    const monthTotals = transactions
-        .filter(t => isSameMonth(new Date(t.date), start))
-        .map(t => t.amount);
+    const totalsInMonth = Array.from(dailyTotals.entries())
+      .filter(([day]) => isSameMonth(new Date(day), start))
+      .map(([, total]) => total);
 
-    return monthTotals.length > 0 ? Math.max(...monthTotals) : 1;
-  }, [transactions, currentMonth]);
+    return totalsInMonth.length > 0 ? Math.max(...totalsInMonth) : 1;
+  }, [dailyTotals, currentMonth]);
   
   const upcomingPaymentDates = React.useMemo(() => {
     return recurringPayments.map(p => {
@@ -177,9 +177,10 @@ export function CalendarClient() {
     const dayString = format(day, "yyyy-MM-dd");
     const total = dailyTotals.get(dayString);
     if (!total || total <= 0) return 0;
-    if (maxSpending <= 0) return 1;
+    if (maxSpendingInMonth <= 0) return 1;
 
-    const percentage = (total / maxSpending) * 100;
+    const percentage = (total / maxSpendingInMonth) * 100;
+    if (percentage === 0) return 0;
     if (percentage < 20) return 1;
     if (percentage < 40) return 2;
     if (percentage < 60) return 3;
@@ -189,7 +190,7 @@ export function CalendarClient() {
   
   const modifiers = {
     ...Object.fromEntries(
-        Array.from({ length: 5 }, (_, i) => i + 1).map((level) => [
+        Array.from({ length: 5 }, (_, i => i + 1)).map((level) => [
         `spending-${level}`,
         (day: Date) => getSpendingLevel(day) === level,
         ])
@@ -198,12 +199,11 @@ export function CalendarClient() {
   };
   
   const modifierClassNames = {
-    ...Object.fromEntries(
-        Array.from({ length: 5 }, (_, i) => i + 1).map((level) => [
-        `spending-${level}`,
-        `bg-primary/${level * 20} text-primary-foreground`,
-        ])
-    ),
+    'spending-1': 'bg-primary/20',
+    'spending-2': 'bg-primary/40',
+    'spending-3': 'bg-primary/60 text-primary-foreground',
+    'spending-4': 'bg-primary/80 text-primary-foreground',
+    'spending-5': 'bg-primary text-primary-foreground',
     recurring: 'relative before:content-[""] before:absolute before:bottom-1.5 before:left-1/2 before:-translate-x-1/2 before:h-1.5 before:w-1.5 before:rounded-full before:bg-green-500'
   };
 
@@ -277,3 +277,5 @@ export function CalendarClient() {
     </div>
   );
 }
+
+    
