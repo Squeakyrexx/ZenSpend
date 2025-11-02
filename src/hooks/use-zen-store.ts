@@ -134,29 +134,34 @@ export const useZenStore = () => {
   // Recalculate budget spent amounts whenever transactions change
   useEffect(() => {
     if(isInitialized) {
-        const startOfCurrentMonth = startOfMonth(new Date());
-        const monthlyTransactions = transactions.filter(t => isSameMonth(new Date(t.date), startOfCurrentMonth));
+        setInternalBudgets(prevBudgets => {
+            const startOfCurrentMonth = startOfMonth(new Date());
+            const monthlyTransactions = transactions.filter(t => isSameMonth(new Date(t.date), startOfCurrentMonth));
 
-        const newBudgets = budgets.map(b => ({...b, spent: 0}));
-        
-        monthlyTransactions.forEach(t => {
-            const budget = newBudgets.find(b => b.category === t.category);
-            if (budget) {
-                budget.spent += t.amount;
+            const newBudgets = prevBudgets.map(b => ({...b, spent: 0}));
+            
+            monthlyTransactions.forEach(t => {
+                const budget = newBudgets.find(b => b.category === t.category);
+                if (budget) {
+                    budget.spent += t.amount;
+                }
+            });
+            // Only update state if the values have actually changed
+            if (JSON.stringify(newBudgets) !== JSON.stringify(prevBudgets)) {
+                return newBudgets;
             }
+            return prevBudgets;
         });
-        setInternalBudgets(newBudgets);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [transactions, isInitialized]);
+  }, [transactions, isInitialized, setInternalBudgets]);
   
-    // Check for due recurring payments
+  // Check for due recurring payments
   useEffect(() => {
     if (isInitialized) {
       const today = new Date();
-      let newTransactions: Transaction[] = [];
       
       setRecurringPayments(currentPayments => {
+        let newTransactions: Transaction[] = [];
         const updatedPayments = currentPayments.map(p => {
           const lastLoggedDate = p.lastLogged ? new Date(p.lastLogged) : null;
           const dueDateInCurrentMonth = new Date(today.getFullYear(), today.getMonth(), p.dayOfMonth);
@@ -187,10 +192,13 @@ export const useZenStore = () => {
             setTransactions(currentTransactions => [...newTransactions, ...currentTransactions]);
         }
         
-        return updatedPayments;
+        // Only update state if something changed
+        if (JSON.stringify(updatedPayments) !== JSON.stringify(currentPayments)) {
+            return updatedPayments;
+        }
+        return currentPayments;
       });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isInitialized, setRecurringPayments, setTransactions, toast]);
   
   const calculateMonthlyIncome = useCallback(() => {
