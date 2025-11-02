@@ -116,7 +116,7 @@ function DailyTransactionsSheet({
 
   const upcomingBills = React.useMemo(() => {
     if (!selectedDay || !(isFuture(selectedDay) || isToday(selectedDay))) return [];
-    return recurringPayments.filter(p => {
+    return (recurringPayments || []).filter(p => {
         const dueDate = new Date(selectedDay.getFullYear(), selectedDay.getMonth(), p.dayOfMonth);
         return isSameDay(dueDate, selectedDay);
     });
@@ -229,7 +229,7 @@ export function CalendarClient() {
   const [viewingTransaction, setViewingTransaction] = React.useState<Transaction | null>(null);
   const [viewMode, setViewMode] = React.useState<"count" | "amount">("count");
   
-  const categories = React.useMemo(() => budgets.map(b => b.category), [budgets]);
+  const categories = React.useMemo(() => (budgets || []).map(b => b.category), [budgets]);
   
   const [selectedCategories, setSelectedCategories] = React.useState<Record<Category, boolean>>(
     () => Object.fromEntries(categories.map(c => [c, true]))
@@ -240,7 +240,7 @@ export function CalendarClient() {
   }, [categories]);
 
   const filteredTransactions = React.useMemo(() => {
-    return transactions.filter(t => selectedCategories[t.category]);
+    return (transactions || []).filter(t => selectedCategories[t.category]);
   }, [transactions, selectedCategories]);
 
 
@@ -258,7 +258,7 @@ export function CalendarClient() {
 
   
   const upcomingPaymentDates = React.useMemo(() => {
-    return recurringPayments.map(p => {
+    return (recurringPayments || []).map(p => {
         const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), p.dayOfMonth);
         if (isSameMonth(date, currentMonth) && (isFuture(date) || isToday(date))) {
             return date;
@@ -423,3 +423,5 @@ export function CalendarClient() {
     </div>
   );
 }
+
+    
