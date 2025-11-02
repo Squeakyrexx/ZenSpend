@@ -137,8 +137,8 @@ function DailyTransactionsSheet({
 }
 
 const legendItems = [
-  { label: '1', className: 'bg-blue-200/60 dark:bg-blue-900/40' },
-  { label: '2', className: 'bg-green-200/60 dark:bg-green-800/40' },
+  { label: '1', className: 'bg-blue-300/60 dark:bg-blue-900/40' },
+  { label: '2', className: 'bg-green-300/60 dark:bg-green-800/40' },
   { label: '3', className: 'bg-orange-300/60 dark:bg-orange-800/40' },
   { label: '4', className: 'bg-pink-300/60 dark:bg-pink-800/40' },
   { label: '5+', className: 'bg-red-300/60 dark:bg-red-800/40' },
@@ -195,8 +195,8 @@ export function CalendarClient() {
   };
   
   const modifierClassNames = {
-    'count-1': 'bg-blue-200/60 text-blue-900 dark:bg-blue-900/40 dark:text-blue-100',
-    'count-2': 'bg-green-200/60 text-green-900 dark:bg-green-800/40 dark:text-green-100',
+    'count-1': 'bg-blue-300/60 text-blue-900 dark:bg-blue-900/40 dark:text-blue-100',
+    'count-2': 'bg-green-300/60 text-green-900 dark:bg-green-800/40 dark:text-green-100',
     'count-3': 'bg-orange-300/60 text-orange-900 dark:bg-orange-800/40 dark:text-orange-100',
     'count-4': 'bg-pink-300/60 text-pink-900 dark:bg-pink-800/40 dark:text-pink-100',
     'count-5': 'bg-red-300/60 text-red-900 dark:bg-red-800/40 dark:text-white font-bold',
@@ -291,3 +291,5 @@ export function CalendarClient() {
     </div>
   );
 }
+
+    
