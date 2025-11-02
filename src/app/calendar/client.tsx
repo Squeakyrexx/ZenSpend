@@ -190,20 +190,20 @@ export function CalendarClient() {
   
   const modifiers = {
     ...Object.fromEntries(
-        Array.from({ length: 5 }, (_, i => i + 1)).map((level) => [
+      Array.from({ length: 5 }, (_, i) => i + 1).map((level) => [
         `spending-${level}`,
         (day: Date) => getSpendingLevel(day) === level,
-        ])
+      ])
     ),
     recurring: (day: Date) => upcomingPaymentDates.some(d => isSameDay(d, day))
   };
   
   const modifierClassNames = {
-    'spending-1': 'bg-primary/20',
-    'spending-2': 'bg-primary/40',
-    'spending-3': 'bg-primary/60 text-primary-foreground',
-    'spending-4': 'bg-primary/80 text-primary-foreground',
-    'spending-5': 'bg-primary text-primary-foreground',
+    'spending-1': 'bg-purple-200/50 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200',
+    'spending-2': 'bg-purple-300/60 text-purple-900 dark:bg-purple-800/40 dark:text-purple-100',
+    'spending-3': 'bg-purple-400/70 text-purple-900 dark:bg-purple-700/50 dark:text-white',
+    'spending-4': 'bg-red-400/60 text-red-900 dark:bg-red-800/60 dark:text-white',
+    'spending-5': 'bg-red-500/80 text-white dark:bg-red-600/80 dark:text-white font-bold',
     recurring: 'relative before:content-[""] before:absolute before:bottom-1.5 before:left-1/2 before:-translate-x-1/2 before:h-1.5 before:w-1.5 before:rounded-full before:bg-green-500'
   };
 
@@ -277,5 +277,3 @@ export function CalendarClient() {
     </div>
   );
 }
-
-    
