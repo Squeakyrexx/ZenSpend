@@ -4,12 +4,14 @@
 import * as React from "react";
 import { useZenStore } from "@/hooks/use-zen-store";
 import type { Category, Budget } from "@/lib/types";
+import { getBudgetSuggestions } from "../actions";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { NumpadDialog } from "@/components/ui/numpad-dialog";
-import { Pencil, PlusCircle, Trash2 } from "lucide-react";
+import { Pencil, PlusCircle, Trash2, Sparkles, Loader2, Check, X, Wand2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Dialog,
@@ -43,6 +45,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import Link from 'next/link';
 
 function BudgetCard({
   budget,
@@ -257,6 +260,112 @@ function AddCategoryDialog({
     );
 }
 
+function AiBudgetCard() {
+  const { budgets, transactions, calculateMonthlyIncome, setBudgets, categories } = useZenStore();
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [suggestions, setSuggestions] = React.useState<Record<string, number> | null>(null);
+
+  const handleGenerate = async () => {
+    setIsLoading(true);
+    setSuggestions(null);
+    const income = calculateMonthlyIncome();
+
+    const result = await getBudgetSuggestions(income, transactions, categories);
+    setIsLoading(false);
+
+    if (result && 'error' in result) {
+      toast({
+        variant: "destructive",
+        title: "Error Generating Suggestions",
+        description: result.error,
+      });
+    } else if (result) {
+      setSuggestions(result);
+       toast({
+        title: "AI Suggestions Ready!",
+        description: "Review the suggested budget limits below.",
+      });
+    }
+  };
+
+  const handleApply = () => {
+    if (!suggestions) return;
+    const newBudgets = budgets.map(b => ({
+        ...b,
+        limit: suggestions[b.category] || b.limit,
+    }));
+    setBudgets(newBudgets);
+    toast({
+        title: "Budgets Updated!",
+        description: "Your new budget limits have been applied.",
+    });
+    setSuggestions(null);
+  };
+  
+  const handleDismiss = () => {
+    setSuggestions(null);
+  };
+  
+  const income = calculateMonthlyIncome();
+
+
+  return (
+    <Card className="lg:col-span-3 bg-gradient-to-br from-card to-secondary/30 border-primary/20">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-3"><Wand2 className="text-primary"/>AI Budget Assistant</CardTitle>
+          <CardDescription>Let AI analyze your income and spending to suggest a personalized budget.</CardDescription>
+        </CardHeader>
+        <CardContent>
+            {isLoading ? (
+                 <div className="flex flex-col items-center justify-center text-center p-8 space-y-3">
+                    <Loader2 className="h-10 w-10 text-primary animate-spin" />
+                    <p className="font-semibold text-lg">Analyzing your finances...</p>
+                    <p className="text-muted-foreground">This may take a moment. The AI is learning your spending habits.</p>
+                </div>
+            ) : suggestions ? (
+                <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Suggested Monthly Budgets:</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {Object.entries(suggestions).map(([category, limit]) => (
+                            <div key={category} className="p-4 rounded-lg bg-background/50">
+                                <p className="font-medium">{category}</p>
+                                <p className="text-2xl font-bold text-primary">${limit.toFixed(0)}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            ) : (
+                <div className="text-center p-8">
+                     <h3 className="text-xl font-bold">Ready to build a smarter budget?</h3>
+                    {income > 0 ? (
+                        <>
+                            <p className="text-muted-foreground mt-2 mb-4">Based on your monthly income of ${income.toFixed(2)}, I can create a budget tailored for you.</p>
+                            <Button onClick={handleGenerate} disabled={isLoading}>
+                                <Sparkles className="mr-2 h-4 w-4" /> Generate Suggestions
+                            </Button>
+                        </>
+                    ) : (
+                         <>
+                            <p className="text-muted-foreground mt-2 mb-4">Please add your income sources first so the AI can create a budget for you.</p>
+                            <Button asChild>
+                                <Link href="/income">Add Income</Link>
+                            </Button>
+                        </>
+                    )}
+                </div>
+            )}
+        </CardContent>
+        {suggestions && !isLoading && (
+            <CardFooter className="flex justify-end gap-2">
+                <Button variant="ghost" onClick={handleDismiss}><X className="mr-2"/>Dismiss</Button>
+                <Button onClick={handleApply}><Check className="mr-2"/>Apply Suggestions</Button>
+            </CardFooter>
+        )}
+    </Card>
+  );
+}
+
 
 export function BudgetsClient() {
   const { budgets, updateBudgetLimit, addCategory, deleteCategory, isInitialized } = useZenStore();
@@ -326,6 +435,9 @@ export function BudgetsClient() {
           </CardDescription>
         </CardHeader>
       </Card>
+      
+      <AiBudgetCard />
+      
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {budgets.map((budget) => (
           <BudgetCard
