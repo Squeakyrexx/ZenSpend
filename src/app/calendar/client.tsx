@@ -206,20 +206,21 @@ function DailyTransactionsSheet({
 }
 
 const countLegend = [
-  { label: '1', className: 'bg-blue-300/60' },
-  { label: '2', className: 'bg-green-300/60' },
-  { label: '3', className: 'bg-orange-300/60' },
-  { label: '4', className: 'bg-pink-300/60' },
-  { label: '5+', className: 'bg-red-300/60' },
+  { label: '1', color: 'bg-blue-300/60', text: 'text-blue-900 dark:text-blue-100' },
+  { label: '2', color: 'bg-green-300/60', text: 'text-green-900 dark:text-green-100' },
+  { label: '3', color: 'bg-orange-300/60', text: 'text-orange-900 dark:text-orange-100' },
+  { label: '4', color: 'bg-pink-300/60', text: 'text-pink-900 dark:text-pink-100' },
+  { label: '5+', color: 'bg-red-300/60', text: 'text-red-900 dark:text-white font-bold' },
 ];
 
 const amountLegend = [
-    { label: '< $50', className: 'bg-sky-200/60' },
-    { label: '$50+', className: 'bg-teal-300/60' },
-    { label: '$100+', className: 'bg-yellow-300/60' },
-    { label: '$250+', className: 'bg-orange-400/60' },
-    { label: '$500+', className: 'bg-red-400/60' },
+    { label: '< $50', color: 'bg-sky-200/60', text: 'text-sky-900 dark:text-sky-100' },
+    { label: '$50+', color: 'bg-teal-300/60', text: 'text-teal-900 dark:text-teal-100' },
+    { label: '$100+', color: 'bg-yellow-300/60', text: 'text-yellow-900 dark:text-yellow-100' },
+    { label: '$250+', color: 'bg-orange-400/60', text: 'text-orange-900 dark:text-orange-100' },
+    { label: '$500+', color: 'bg-red-400/60', text: 'text-red-900 dark:text-white font-bold' },
 ];
+
 
 export function CalendarClient() {
   const { transactions, isInitialized, recurringPayments, categories } = useZenStore();
@@ -259,27 +260,23 @@ export function CalendarClient() {
     }).filter((d): d is Date => d !== null);
   }, [recurringPayments, currentMonth]);
 
+  const legendItems = viewMode === 'count' ? countLegend : amountLegend;
 
   const getLevel = (day: Date) => {
     const dayString = format(day, "yyyy-MM-dd");
     const metric = dailyMetrics.get(dayString);
     if (!metric) return 0;
     
-    if (viewMode === 'count') {
-        if (metric.count === 0) return 0;
-        if (metric.count === 1) return 1;
-        if (metric.count === 2) return 2;
-        if (metric.count === 3) return 3;
-        if (metric.count === 4) return 4;
-        return 5;
-    } else { // amount
-        if (metric.amount === 0) return 0;
-        if (metric.amount < 50) return 1;
-        if (metric.amount < 100) return 2;
-        if (metric.amount < 250) return 3;
-        if (metric.amount < 500) return 4;
-        return 5;
-    }
+    const legend = viewMode === 'count' 
+      ? [1, 2, 3, 4, Infinity] // levels for count
+      : [50, 100, 250, 500, Infinity]; // levels for amount
+    
+    const value = viewMode === 'count' ? metric.count : metric.amount;
+
+    if (value <= 0) return 0;
+    
+    const level = legend.findIndex(l => value < l) + 1;
+    return level > 0 ? level : legend.length;
   };
   
   const modifiers = {
@@ -293,15 +290,15 @@ export function CalendarClient() {
   };
   
   const modifierClassNames = {
-    'level-1': viewMode === 'count' ? 'bg-blue-300/60 text-blue-900 dark:bg-blue-900/40 dark:text-blue-100' : 'bg-sky-200/60 text-sky-900 dark:bg-sky-900/40 dark:text-sky-100',
-    'level-2': viewMode === 'count' ? 'bg-green-300/60 text-green-900 dark:bg-green-800/40 dark:text-green-100' : 'bg-teal-300/60 text-teal-900 dark:bg-teal-800/40 dark:text-teal-100',
-    'level-3': viewMode === 'count' ? 'bg-orange-300/60 text-orange-900 dark:bg-orange-800/40 dark:text-orange-100' : 'bg-yellow-300/60 text-yellow-900 dark:bg-yellow-800/40 dark:text-yellow-100',
-    'level-4': viewMode === 'count' ? 'bg-pink-300/60 text-pink-900 dark:bg-pink-800/40 dark:text-pink-100' : 'bg-orange-400/60 text-orange-900 dark:bg-orange-700/40 dark:text-orange-100',
-    'level-5': viewMode === 'count' ? 'bg-red-300/60 text-red-900 dark:bg-red-800/40 dark:text-white font-bold' : 'bg-red-400/60 text-red-900 dark:bg-red-700/40 dark:text-white font-bold',
+    ...Object.fromEntries(
+        legendItems.map((item, index) => [
+            `level-${index + 1}`,
+            `${item.color} ${item.text}`
+        ])
+    ),
     recurring: 'relative before:content-[""] before:absolute before:bottom-1.5 before:left-1/2 before:-translate-x-1/2 before:h-1.5 before:w-1.5 before:rounded-full before:bg-primary'
   };
 
-  const legendItems = viewMode === 'count' ? countLegend : amountLegend;
 
   if (!isInitialized) {
     return (
@@ -390,7 +387,7 @@ export function CalendarClient() {
                     <span className="font-semibold">{viewMode === 'count' ? "Transactions:" : "Amount Spent:"}</span>
                     {legendItems.map(item => (
                         <div key={item.label} className="flex items-center gap-1.5">
-                            <span className={`h-4 w-4 rounded-sm ${item.className}`}></span>
+                            <span className={`h-4 w-4 rounded-sm ${item.color}`}></span>
                             <span>{item.label}</span>
                         </div>
                     ))}
