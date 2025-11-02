@@ -12,7 +12,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-const SuggestBudgetInputSchema = z.object({
+export const SuggestBudgetInputSchema = z.object({
   income: z.number().describe('The total monthly income of the user.'),
   transactions: z.array(
     z.object({
@@ -25,7 +25,7 @@ const SuggestBudgetInputSchema = z.object({
 });
 export type SuggestBudgetInput = z.infer<typeof SuggestBudgetInputSchema>;
 
-const SuggestBudgetOutputSchema = z.record(z.string(), z.number())
+export const SuggestBudgetOutputSchema = z.record(z.string(), z.number())
     .describe('An object where keys are category names and values are the suggested budget limits.');
 export type SuggestBudgetOutput = z.infer<typeof SuggestBudgetOutputSchema>;
 
@@ -57,7 +57,7 @@ Past Month's Transactions:
 - Category: {{category}}, Amount: {{amount}}
 {{/each}}
 
-Return the suggestions as a JSON object where the keys are the category names and the values are the suggested numerical budget limits.
+Return the suggestions as a JSON object where the keys are the category names and the values are the suggested numerical budget limits. IMPORTANT: If a category name contains a space or special character, it MUST be enclosed in double quotes to be a valid JSON key.
 `,
 });
 
