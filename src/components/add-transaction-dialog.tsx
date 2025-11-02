@@ -120,10 +120,6 @@ export function AddTransactionView({ onComplete }: { onComplete: () => void }) {
     addTransaction(newTransaction);
     setLastTransaction(newTransaction);
     setStep("done");
-
-    resetTimeoutRef.current = setTimeout(() => {
-      handleReset(true);
-    }, 3000); 
   };
 
 
@@ -149,7 +145,7 @@ export function AddTransactionView({ onComplete }: { onComplete: () => void }) {
             title: "Transaction Undone",
             description: `"${lastTransaction.description}" was removed.`,
         });
-        handleReset();
+        handleReset(true);
     }
   }
 
@@ -287,7 +283,7 @@ export function AddTransactionView({ onComplete }: { onComplete: () => void }) {
                      {step === 'done' && (
                         <div className="flex flex-col items-center gap-4">
                             <motion.div initial={{scale: 0.5}} animate={{scale: 1}}><Check className="h-24 w-24 text-green-500" /></motion.div>
-                            <Button onClick={() => handleReset(true)}>Add Another</Button>
+                            <Button onClick={() => handleReset()}>Add Another</Button>
                         </div>
                      )}
                    </div>
@@ -297,7 +293,7 @@ export function AddTransactionView({ onComplete }: { onComplete: () => void }) {
           </div>
         </div>
         
-        {lastTransaction && (
+        {lastTransaction && step === "done" && (
            <div className="bg-secondary/50 rounded-lg animate-in fade-in-50 slide-in-from-bottom-5 p-4">
                <div className="flex justify-between items-center">
                  <div className="flex items-center gap-3">
@@ -335,5 +331,7 @@ export function AddTransactionDialog({ open, onOpenChange }: { open: boolean, on
         </Dialog>
     )
 }
+
+    
 
     
