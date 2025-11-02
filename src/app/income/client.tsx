@@ -303,8 +303,8 @@ export function IncomeClient() {
     setIsFormOpen(true);
   }
 
-  const fixedIncomes = incomes.filter(i => i.frequency !== 'one-time');
-  const oneTimeIncomes = incomes.filter(i => i.frequency === 'one-time');
+  const fixedIncomes = (incomes || []).filter(i => i.frequency !== 'one-time');
+  const oneTimeIncomes = (incomes || []).filter(i => i.frequency === 'one-time');
   
   const renderSkeleton = () => (
      <div className="p-4 md:p-8">
