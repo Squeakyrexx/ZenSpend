@@ -137,10 +137,10 @@ function DailyTransactionsSheet({
 }
 
 const legendItems = [
-  { label: '1', className: 'bg-sky-200/60 dark:bg-sky-900/40' },
-  { label: '2', className: 'bg-teal-200/60 dark:bg-teal-900/40' },
-  { label: '3-4', className: 'bg-amber-200/60 dark:bg-amber-800/40' },
-  { label: '5+', className: 'bg-rose-300/60 dark:bg-rose-800/40' },
+  { label: '1', className: 'bg-violet-200/60 dark:bg-violet-900/40' },
+  { label: '2', className: 'bg-blue-200/60 dark:bg-blue-900/40' },
+  { label: '3-4', className: 'bg-green-200/60 dark:bg-green-800/40' },
+  { label: '5+', className: 'bg-red-300/60 dark:bg-red-800/40' },
 ];
 
 export function CalendarClient() {
@@ -193,10 +193,10 @@ export function CalendarClient() {
   };
   
   const modifierClassNames = {
-    'count-1': 'bg-sky-200/60 text-sky-900 dark:bg-sky-900/40 dark:text-sky-100',
-    'count-2': 'bg-teal-200/60 text-teal-900 dark:bg-teal-900/40 dark:text-teal-100',
-    'count-3': 'bg-amber-200/60 text-amber-900 dark:bg-amber-800/40 dark:text-amber-100',
-    'count-4': 'bg-rose-300/60 text-rose-900 dark:bg-rose-800/40 dark:text-white font-bold',
+    'count-1': 'bg-violet-200/60 text-violet-900 dark:bg-violet-900/40 dark:text-violet-100',
+    'count-2': 'bg-blue-200/60 text-blue-900 dark:bg-blue-900/40 dark:text-blue-100',
+    'count-3': 'bg-green-200/60 text-green-900 dark:bg-green-800/40 dark:text-green-100',
+    'count-4': 'bg-red-300/60 text-red-900 dark:bg-red-800/40 dark:text-white font-bold',
     recurring: 'relative before:content-[""] before:absolute before:bottom-1.5 before:left-1/2 before:-translate-x-1/2 before:h-1.5 before:w-1.5 before:rounded-full before:bg-primary'
   };
 
