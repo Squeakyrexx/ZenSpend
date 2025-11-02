@@ -20,23 +20,79 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Icon } from "@/lib/icons.tsx";
 import { format, isSameDay, startOfMonth, isFuture, isToday, isSameMonth } from "date-fns";
 import { Badge } from "@/components/ui/badge";
-import { EditTransactionDialog } from "../transactions/client";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
+
+
+function TransactionDetailsDialog({
+  transaction,
+  open,
+  onOpenChange,
+}: {
+  transaction: Transaction | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+    if (!transaction) return null;
+
+    const { categoryIcons } = useZenStore();
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Transaction Details</DialogTitle>
+                    <DialogDescription>
+                        A read-only view of your transaction.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                    <div className="flex items-center gap-4 p-4 rounded-lg bg-secondary/50">
+                        <Icon name={categoryIcons[transaction.category] || transaction.icon} className="h-10 w-10 text-primary" />
+                        <div>
+                            <p className="font-bold text-xl">{transaction.description}</p>
+                            <p className="text-2xl font-bold">${transaction.amount.toFixed(2)}</p>
+                        </div>
+                    </div>
+                     <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div className="space-y-1">
+                            <p className="text-muted-foreground">Category</p>
+                            <p className="font-medium flex items-center gap-2">
+                                <Badge variant="secondary">{transaction.category}</Badge>
+                            </p>
+                        </div>
+                         <div className="space-y-1">
+                            <p className="text-muted-foreground">Date</p>
+                            <p className="font-medium">{format(new Date(transaction.date), 'PPP')}</p>
+                        </div>
+                    </div>
+                </div>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
 
 function DailyTransactionsSheet({
   selectedDay,
   onOpenChange,
-  onEditTransaction,
+  onViewTransaction,
 }: {
   selectedDay: Date | null;
   onOpenChange: (open: boolean) => void;
-  onEditTransaction: (transaction: Transaction) => void;
+  onViewTransaction: (transaction: Transaction) => void;
 }) {
   const { transactions, categoryIcons, recurringPayments } = useZenStore();
 
@@ -75,7 +131,7 @@ function DailyTransactionsSheet({
                         <button
                         key={t.id}
                         className="w-full text-left p-3 rounded-lg hover:bg-secondary transition-colors flex items-center justify-between"
-                        onClick={() => onEditTransaction(t)}
+                        onClick={() => onViewTransaction(t)}
                         >
                         <div className="flex items-center gap-3">
                             <Icon
@@ -137,20 +193,19 @@ function DailyTransactionsSheet({
 }
 
 const legendItems = [
-  { label: '1', className: 'bg-blue-300/60 dark:bg-blue-900/40' },
-  { label: '2', className: 'bg-green-300/60 dark:bg-green-800/40' },
-  { label: '3', className: 'bg-orange-300/60 dark:bg-orange-800/40' },
-  { label: '4', className: 'bg-pink-300/60 dark:bg-pink-800/40' },
-  { label: '5+', className: 'bg-red-300/60 dark:bg-red-800/40' },
+  { label: '1', className: 'bg-blue-300/60' },
+  { label: '2', className: 'bg-green-300/60' },
+  { label: '3', className: 'bg-orange-300/60' },
+  { label: '4', className: 'bg-pink-300/60' },
+  { label: '5+', className: 'bg-red-300/60' },
 ];
 
 export function CalendarClient() {
-  const { transactions, isInitialized, updateTransaction, recurringPayments } = useZenStore();
+  const { transactions, isInitialized, recurringPayments } = useZenStore();
   const [currentMonth, setCurrentMonth] = React.useState(new Date());
   const [selectedDay, setSelectedDay] = React.useState<Date | null>(null);
-  const [editingTransaction, setEditingTransaction] = React.useState<Transaction | null>(null);
+  const [viewingTransaction, setViewingTransaction] = React.useState<Transaction | null>(null);
 
-  const { toast } = useToast();
 
   const dailyTransactionCounts = React.useMemo(() => {
     const counts = new Map<string, number>();
@@ -201,14 +256,6 @@ export function CalendarClient() {
     'count-4': 'bg-pink-300/60 text-pink-900 dark:bg-pink-800/40 dark:text-pink-100',
     'count-5': 'bg-red-300/60 text-red-900 dark:bg-red-800/40 dark:text-white font-bold',
     recurring: 'relative before:content-[""] before:absolute before:bottom-1.5 before:left-1/2 before:-translate-x-1/2 before:h-1.5 before:w-1.5 before:rounded-full before:bg-primary'
-  };
-
-  const handleEditConfirm = (transactionId: string, updates: Partial<Transaction>) => {
-    updateTransaction(transactionId, updates);
-    toast({
-        title: "Transaction Updated",
-        description: `Your changes to "${updates.description}" have been saved.`,
-    });
   };
 
   if (!isInitialized) {
@@ -276,20 +323,17 @@ export function CalendarClient() {
       <DailyTransactionsSheet
         selectedDay={selectedDay}
         onOpenChange={(open) => !open && setSelectedDay(null)}
-        onEditTransaction={(t) => {
-            setEditingTransaction(t);
+        onViewTransaction={(t) => {
+            setViewingTransaction(t);
             setSelectedDay(null); // Close sheet to open dialog
         }}
       />
       
-      <EditTransactionDialog 
-        open={!!editingTransaction}
-        onOpenChange={(open) => !open && setEditingTransaction(null)}
-        onConfirm={handleEditConfirm}
-        transaction={editingTransaction}
+      <TransactionDetailsDialog 
+        open={!!viewingTransaction}
+        onOpenChange={(open) => !open && setViewingTransaction(null)}
+        transaction={viewingTransaction}
       />
     </div>
   );
 }
-
-    
