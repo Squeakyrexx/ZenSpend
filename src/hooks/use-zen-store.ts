@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 import type { Transaction, Budget, Category, RecurringPayment, Income, IncomeFrequency } from "@/lib/types";
 import { DEFAULT_BUDGETS } from "@/lib/data";
 import { useToast } from "./use-toast";
-import { isSameMonth, isPast, startOfMonth, getDaysInMonth } from "date-fns";
+import { isSameMonth, isPast, startOfMonth } from "date-fns";
 
 const useLocalStorage = <T,>(key: string, initialValue: T) => {
   const [storedValue, setStoredValue] = useState<T>(() => {
@@ -155,13 +155,13 @@ export const useZenStore = () => {
     if (isInitialized) {
       const today = new Date();
       const newTransactions: Transaction[] = [];
-      const updatedPayments: RecurringPayment[] = [];
-
-      recurringPayments.forEach(p => {
+      const updatedRecurringPayments = [...recurringPayments];
+      let budgetsNeedUpdate = false;
+  
+      updatedRecurringPayments.forEach((p, index) => {
         const dueDate = new Date(today.getFullYear(), today.getMonth(), p.dayOfMonth);
         const lastLoggedDate = p.lastLogged ? new Date(p.lastLogged) : null;
-        
-        // Is the payment due this month and has it not been logged this month?
+  
         if (isPast(dueDate) && (!lastLoggedDate || !isSameMonth(dueDate, lastLoggedDate))) {
           const newTransaction: Transaction = {
             id: `recurring-${p.id}-${new Date().toISOString()}`,
@@ -172,24 +172,36 @@ export const useZenStore = () => {
             date: dueDate.toISOString(),
           };
           newTransactions.push(newTransaction);
-          updatedPayments.push({ ...p, lastLogged: today.toISOString() });
+          updatedRecurringPayments[index] = { ...p, lastLogged: today.toISOString() };
+          budgetsNeedUpdate = true;
           
           toast({
             title: "Recurring Payment Logged",
             description: `Automatically logged "${p.description}" for $${p.amount.toFixed(2)}.`,
           });
-        } else {
-            updatedPayments.push(p);
         }
       });
       
       if (newTransactions.length > 0) {
+        // Update transactions state
         setTransactions(prev => [...newTransactions, ...prev]);
-        setRecurringPayments(updatedPayments);
+        
+        // Update recurring payments state
+        setRecurringPayments(updatedRecurringPayments);
+  
+        // And now, also update the budgets state immediately
+        const newBudgets = [...budgets];
+        newTransactions.forEach(t => {
+            const budget = newBudgets.find(b => b.category === t.category);
+            if (budget) {
+                budget.spent += t.amount;
+            }
+        });
+        setInternalBudgets(newBudgets);
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isInitialized]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isInitialized, setTransactions, setRecurringPayments, setInternalBudgets]);
   
   const calculateMonthlyIncome = useCallback(() => {
     const today = new Date();
@@ -211,7 +223,7 @@ export const useZenStore = () => {
             } else if (income.frequency === 'weekly') {
                 totalIncome += income.amount * 4;
             } else if (income.frequency === 'bi-weekly') {
-                 totalIncome += income.amount * 2; // Simplified for now
+                 totalIncome += income.amount * 2;
             }
         }
     });
