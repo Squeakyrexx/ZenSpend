@@ -261,7 +261,7 @@ function AddCategoryDialog({
 }
 
 function AiBudgetCard() {
-  const { budgets, transactions, calculateMonthlyIncome, setBudgets, categories } = useZenStore();
+  const { budgets, transactions, calculateMonthlyIncome, setBudgets, categories, categoryIcons } = useZenStore();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = React.useState(false);
   const [suggestions, setSuggestions] = React.useState<Record<string, number> | null>(null);
@@ -291,15 +291,36 @@ function AiBudgetCard() {
 
   const handleApply = () => {
     if (!suggestions) return;
-    const newBudgets = budgets.map(b => ({
-        ...b,
-        limit: suggestions[b.category] || b.limit,
-    }));
-    setBudgets(newBudgets);
-    toast({
-        title: "Budgets Updated!",
-        description: "Your new budget limits have been applied.",
+  
+    const updatedBudgets = [...budgets];
+    const suggestionsToApply = { ...suggestions };
+  
+    // Update existing budgets
+    updatedBudgets.forEach(b => {
+      if (suggestionsToApply[b.category]) {
+        b.limit = suggestionsToApply[b.category];
+        delete suggestionsToApply[b.category]; // Remove from suggestions to avoid re-adding
+      }
     });
+  
+    // Add new budgets for remaining suggestions
+    for (const category in suggestionsToApply) {
+      const newBudget: Budget = {
+        category,
+        limit: suggestionsToApply[category],
+        spent: 0, // New budgets start with 0 spent
+        icon: categoryIcons[category] || 'Landmark', // Get icon or use default
+      };
+      updatedBudgets.push(newBudget);
+    }
+  
+    setBudgets(updatedBudgets);
+    
+    toast({
+      title: "Budgets Updated!",
+      description: "Your new budget limits have been applied.",
+    });
+    
     setSuggestions(null);
   };
   
