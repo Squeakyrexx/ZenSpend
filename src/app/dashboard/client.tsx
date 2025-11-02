@@ -294,7 +294,7 @@ export function DashboardClient() {
                               />
                               <Area
                                 dataKey="total"
-                                type="natural"
+                                type="monotone"
                                 fill="url(#colorTotal)"
                                 stroke="var(--color-total)"
                                 stackId="a"
