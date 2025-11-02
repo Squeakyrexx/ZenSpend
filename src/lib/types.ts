@@ -28,6 +28,7 @@ export interface Budget {
   limit: number;
   spent: number;
   icon: string;
+  color: string; // HSL string
 }
 
 export interface RecurringPayment {

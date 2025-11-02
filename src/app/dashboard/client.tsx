@@ -24,8 +24,8 @@ import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
+  type ChartConfig
 } from '@/components/ui/chart';
-import type { ChartConfig } from '@/components/ui/chart';
 import { Button } from '@/components/ui/button';
 import { getInsights } from '../actions';
 import type { Insight } from '@/ai/flows/generate-spending-insights';
@@ -112,14 +112,14 @@ export function DashboardClient() {
   };
 
   const recentTransactions = React.useMemo(() => {
-    return [...transactions]
+    return [...(transactions || [])]
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
       .slice(0, 5);
   }, [transactions]);
 
   const upcomingPayments = React.useMemo(() => {
     const today = new Date();
-    return recurringPayments
+    return (recurringPayments || [])
       .map((p) => {
         const thisMonthDueDate = new Date(
           today.getFullYear(),
@@ -139,7 +139,7 @@ export function DashboardClient() {
   }, [recurringPayments]);
 
   const topBudgets = React.useMemo(() => {
-    return [...budgets]
+    return [...(budgets || [])]
         .sort((a,b) => (b.spent / b.limit) - (a.spent / a.limit))
         .slice(0, 3);
   }, [budgets]);
@@ -151,21 +151,26 @@ export function DashboardClient() {
       end: today
     });
 
-    const dynamicChartConfig = budgets.reduce((acc, budget, index) => {
+    const activeBudgets = budgets || [];
+    const activeCategories = categories || [];
+    const activeTransactions = transactions || [];
+
+    const dynamicChartConfig = activeBudgets.reduce((acc, budget) => {
       acc[budget.category] = {
         label: budget.category,
-        color: `hsl(var(--chart-${(index % 5) + 1}))`
+        color: budget.color
       };
       return acc;
     }, {} as ChartConfig);
 
     const spendingMap = new Map(last30Days.map(day => {
         const entry: {[key: string]: any} = { date: format(day, 'yyyy-MM-dd') };
-        categories.forEach(cat => entry[cat] = 0);
+        activeCategories.forEach(cat => entry[cat] = 0);
         return [format(day, 'yyyy-MM-dd'), entry];
     }));
 
-    transactions.forEach(t => {
+    activeTransactions.forEach(t => {
+      if (!dynamicChartConfig[t.category]) return;
       const transactionDate = format(new Date(t.date), 'yyyy-MM-dd');
       if (spendingMap.has(transactionDate)) {
           const dayData = spendingMap.get(transactionDate)!;
@@ -233,10 +238,10 @@ export function DashboardClient() {
         {topBudgets.map(budget => {
             const progress = budget.limit > 0 ? (budget.spent / budget.limit) * 100 : 0;
             return (
-                <Card key={budget.category} className="hover:border-primary/50 transition-colors">
+                <Card key={budget.category} className="hover:border-primary/50 transition-colors" style={{'--budget-color': budget.color} as React.CSSProperties}>
                      <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-xl">
-                            <Icon name={budget.icon} className="h-6 w-6" />
+                            <Icon name={budget.icon} className="h-6 w-6 text-[var(--budget-color)]" />
                             {budget.category}
                         </CardTitle>
                      </CardHeader>
@@ -250,7 +255,7 @@ export function DashboardClient() {
                         <Progress 
                             value={progress > 100 ? 100 : progress} 
                             className="h-2"
-                            indicatorClassName={getProgressColor(progress)}
+                            indicatorClassName="bg-[var(--budget-color)]"
                         />
                          <p className={cn(
                             "text-right text-xs mt-1 font-medium",
@@ -306,13 +311,13 @@ export function DashboardClient() {
                                     indicator="dot" 
                                 />}
                               />
-                               {Object.keys(chartConfig).map(key => (
+                               {Object.keys(chartConfig).map((key) => (
                                 <Bar
                                     key={key}
                                     dataKey={key}
-                                    fill={`var(--color-${key})`}
+                                    fill={chartConfig[key].color}
                                     stackId="a"
-                                    radius={4}
+                                    radius={0}
                                 />
                                ))}
                             </BarChart>

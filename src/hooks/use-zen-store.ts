@@ -121,9 +121,17 @@ export const useZenStore = () => {
     }, [setInternalBudgets]
   );
   
-  const addCategory = useCallback((category: string, icon: string, limit: number) => {
-    setInternalBudgets(prev => [...prev, { category, icon, limit, spent: 0}]);
+  const addCategory = useCallback((category: string, icon: string, limit: number, color: string) => {
+    setInternalBudgets(prev => [...prev, { category, icon, limit, spent: 0, color }]);
   }, [setInternalBudgets]);
+  
+  const updateCategory = useCallback((originalCategory: string, updates: Partial<Omit<Budget, 'spent'>>) => {
+    setInternalBudgets(prev => prev.map(b => b.category === originalCategory ? {...b, ...updates} : b));
+    if (updates.category && updates.category !== originalCategory) {
+      setTransactions(prev => prev.map(t => t.category === originalCategory ? {...t, category: updates.category!} : t));
+      setRecurringPayments(prev => prev.map(p => p.category === originalCategory ? {...p, category: updates.category!} : p));
+    }
+  }, [setInternalBudgets, setTransactions, setRecurringPayments]);
 
   const deleteCategory = useCallback((category: Category) => {
       setInternalBudgets(prev => prev.filter(b => b.category !== category));
@@ -258,12 +266,11 @@ export const useZenStore = () => {
     budgets, 
     categories,
     categoryIcons,
-    recurringPayments,
-    incomes,
     addTransaction,
     updateTransaction,
     deleteTransaction,
     addCategory,
+    updateCategory,
     deleteCategory,
     setBudgets,
     updateBudgetLimit, 

@@ -47,13 +47,21 @@ import {
 } from "@/components/ui/alert-dialog";
 import Link from 'next/link';
 
+const COLOR_SWATCHES = [
+    "hsl(220 70% 60%)", "hsl(160 60% 55%)", "hsl(340 70% 65%)", "hsl(40 70% 60%)", "hsl(280 60% 65%)",
+    "hsl(10 60% 50%)", "hsl(190 70% 55%)", "hsl(300 50% 60%)", "hsl(80 55% 60%)", "hsl(250 65% 70%)"
+];
+
+
 function BudgetCard({
   budget,
   onUpdateLimit,
+  onEdit,
   onDelete,
 }: {
   budget: Budget;
   onUpdateLimit: (category: Category, newLimit: number) => void;
+  onEdit: (budget: Budget) => void;
   onDelete: (category: Category) => void;
 }) {
   const [isNumpadOpen, setIsNumpadOpen] = React.useState(false);
@@ -77,33 +85,32 @@ function BudgetCard({
     setIsNumpadOpen(false);
   };
 
-  const getProgressColor = () => {
-    if (progress > 100) return "bg-red-500";
-    if (progress >= 80) return "bg-yellow-500";
-    return "bg-primary";
-  }
-
   return (
     <>
-      <Card className="hover:border-primary/50 transition-colors flex flex-col">
+      <Card className="hover:border-primary/50 transition-colors flex flex-col" style={{'--budget-color': budget.color} as React.CSSProperties}>
         <CardHeader>
-          <CardTitle className="flex items-center gap-3">
-            <Icon name={budget.icon} className="h-8 w-8" />
-            {budget.category}
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-3">
+              <Icon name={budget.icon} className="h-8 w-8 text-[var(--budget-color)]" />
+              {budget.category}
+            </CardTitle>
+            <Button variant="ghost" size="icon" onClick={() => onEdit(budget)}>
+              <Pencil className="h-4 w-4" />
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4 flex-grow flex flex-col justify-between">
           <div>
             <div className="flex justify-between items-baseline mb-1">
               <span className="font-bold text-lg">${budget.spent.toFixed(2)}</span>
-              <span className="text-sm text-muted-foreground">
+              <button className="text-sm text-muted-foreground hover:text-foreground" onClick={() => setIsNumpadOpen(true)}>
                 of ${budget.limit.toFixed(2)}
-              </span>
+              </button>
             </div>
             <Progress 
               value={progress > 100 ? 100 : progress} 
               className="h-3"
-              indicatorClassName={getProgressColor()}
+              indicatorClassName="bg-[var(--budget-color)]"
             />
             <p className={cn(
                 "text-right text-sm mt-1 font-medium",
@@ -116,13 +123,10 @@ function BudgetCard({
             </p>
           </div>
           <div className="flex gap-2 pt-4">
-            <Button variant="outline" className="w-full" onClick={() => setIsNumpadOpen(true)}>
-                <Pencil className="mr-2 h-4 w-4" /> Edit Limit
-            </Button>
             <AlertDialog>
                 <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="icon">
-                        <Trash2 className="h-4 w-4"/>
+                    <Button variant="destructive" className="w-full">
+                        <Trash2 className="mr-2 h-4 w-4"/> Delete
                     </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
@@ -153,20 +157,38 @@ function BudgetCard({
   );
 }
 
-function AddCategoryDialog({
+function CategoryDialog({
     open,
     onOpenChange,
-    onAddCategory,
+    onConfirm,
+    budgetToEdit,
 }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onAddCategory: (name: string, icon: string, limit: number) => void;
+    onConfirm: (data: Omit<Budget, 'spent'>) => void;
+    budgetToEdit: Budget | null;
 }) {
     const [name, setName] = React.useState("");
-    const [selectedIcon, setSelectedIcon] = React.useState<string | null>(null);
+    const [selectedIcon, setSelectedIcon] = React.useState<string>("");
+    const [selectedColor, setSelectedColor] = React.useState<string>("");
     const [limit, setLimit] = React.useState(0);
     const [isNumpadOpen, setIsNumpadOpen] = React.useState(false);
     const { toast } = useToast();
+
+    React.useEffect(() => {
+        if (budgetToEdit) {
+            setName(budgetToEdit.category);
+            setSelectedIcon(budgetToEdit.icon);
+            setLimit(budgetToEdit.limit);
+            setSelectedColor(budgetToEdit.color);
+        } else {
+            // Reset for new category
+            setName("");
+            setSelectedIcon("Landmark");
+            setLimit(0);
+            setSelectedColor(COLOR_SWATCHES[0]);
+        }
+    }, [budgetToEdit, open]);
 
     const handleConfirmLimit = (newLimit: number) => {
         if (newLimit > 0) {
@@ -182,36 +204,55 @@ function AddCategoryDialog({
     };
 
     const handleSubmit = () => {
-        if (!name.trim() || !selectedIcon || limit <= 0) {
+        if (!name.trim() || !selectedIcon || limit <= 0 || !selectedColor) {
             toast({
                 variant: "destructive",
                 title: "Missing Information",
-                description: "Please provide a name, select an icon, and set a budget limit.",
+                description: "Please provide a name, select an icon and color, and set a budget limit.",
             });
             return;
         }
-        onAddCategory(name, selectedIcon, limit);
+        onConfirm({ category: name, icon: selectedIcon, limit, color: selectedColor });
         onOpenChange(false);
-        setName("");
-        setSelectedIcon(null);
-        setLimit(0);
     };
+
+    const isEditing = !!budgetToEdit;
+    const dialogTitle = isEditing ? "Edit Category" : "Add New Category";
+    const dialogDescription = isEditing 
+        ? "Update the details for this category." 
+        : "Create a custom budget category for your expenses.";
 
     return (
         <>
             <Dialog open={open} onOpenChange={onOpenChange}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Add New Category</DialogTitle>
-                        <DialogDescription>
-                            Create a custom budget category for your expenses.
-                        </DialogDescription>
+                        <DialogTitle>{dialogTitle}</DialogTitle>
+                        <DialogDescription>{dialogDescription}</DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
                         <div className="space-y-2">
                             <Label htmlFor="category-name">Category Name</Label>
                             <Input id="category-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Hobbies" />
                         </div>
+                        
+                         <div className="space-y-2">
+                            <Label>Color</Label>
+                            <div className="flex gap-2 flex-wrap">
+                                {COLOR_SWATCHES.map((color) => (
+                                    <button
+                                        key={color}
+                                        className={cn(
+                                            "h-8 w-8 rounded-full border-2",
+                                            selectedColor === color ? "border-foreground" : "border-transparent"
+                                        )}
+                                        style={{ backgroundColor: color }}
+                                        onClick={() => setSelectedColor(color)}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+
                         <div className="space-y-2">
                             <Label>Icon</Label>
                              <ScrollArea className="h-32 w-full rounded-md border p-2">
@@ -232,6 +273,7 @@ function AddCategoryDialog({
                                 </div>
                             </ScrollArea>
                         </div>
+
                         <div className="space-y-2">
                             <Label>Budget Limit</Label>
                             <Button variant="outline" className="w-full justify-start font-normal" onClick={() => setIsNumpadOpen(true)}>
@@ -243,7 +285,7 @@ function AddCategoryDialog({
                         <DialogClose asChild>
                             <Button variant="outline">Cancel</Button>
                         </DialogClose>
-                        <Button onClick={handleSubmit}>Add Category</Button>
+                        <Button onClick={handleSubmit}>{isEditing ? "Save Changes" : "Add Category"}</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
@@ -254,11 +296,12 @@ function AddCategoryDialog({
                 onConfirm={handleConfirmLimit}
                 initialValue={limit}
                 title="Set Budget Limit"
-                description="Enter the budget limit for your new category."
+                description={`Enter the budget limit for the ${name} category.`}
             />
         </>
     );
 }
+
 
 function AiBudgetCard() {
   const { budgets, transactions, recurringPayments, calculateMonthlyIncome, setBudgets, categories, categoryIcons } = useZenStore();
@@ -305,11 +348,14 @@ function AiBudgetCard() {
   
     // Add new budgets for remaining suggestions
     for (const category in suggestionsToApply) {
+        // This case should not happen often if suggestions are based on existing categories.
+        // If a new category is suggested, we need a default icon and color.
       const newBudget: Budget = {
         category,
         limit: suggestionsToApply[category],
-        spent: 0, // New budgets start with 0 spent
-        icon: categoryIcons[category] || 'Landmark', // Get icon or use default
+        spent: 0, 
+        icon: categoryIcons[category] || 'Landmark', 
+        color: 'hsl(220 70% 60%)' // Default color
       };
       updatedBudgets.push(newBudget);
     }
@@ -389,27 +435,48 @@ function AiBudgetCard() {
 
 
 export function BudgetsClient() {
-  const { budgets, updateBudgetLimit, addCategory, deleteCategory, isInitialized } = useZenStore();
-  const [isAddCategoryOpen, setIsAddCategoryOpen] = React.useState(false);
+  const { budgets, updateBudgetLimit, addCategory, updateCategory, deleteCategory, isInitialized } = useZenStore();
+  const [isCategoryDialogOpen, setIsCategoryDialogOpen] = React.useState(false);
+  const [budgetToEdit, setBudgetToEdit] = React.useState<Budget | null>(null);
   const { toast } = useToast();
 
   const totalBudget = React.useMemo(() => budgets.reduce((sum, b) => sum + b.limit, 0), [budgets]);
   const totalSpent = React.useMemo(() => budgets.reduce((sum, b) => sum + b.spent, 0), [budgets]);
   
-  const handleAddCategory = (name: string, icon: string, limit: number) => {
-      if (budgets.find(b => b.category.toLowerCase() === name.toLowerCase())) {
+  const handleOpenAddDialog = () => {
+    setBudgetToEdit(null);
+    setIsCategoryDialogOpen(true);
+  }
+
+  const handleOpenEditDialog = (budget: Budget) => {
+    setBudgetToEdit(budget);
+    setIsCategoryDialogOpen(true);
+  }
+  
+  const handleDialogConfirm = (data: Omit<Budget, 'spent'>) => {
+      if (budgetToEdit) {
+          // Editing existing category
+          updateCategory(budgetToEdit.category, data);
           toast({
-              variant: "destructive",
-              title: "Category Exists",
-              description: `A category named "${name}" already exists.`,
+              title: "Category Updated",
+              description: `The "${data.category}" category has been updated.`
           });
-          return;
+      } else {
+          // Adding new category
+          if (budgets.find(b => b.category.toLowerCase() === data.category.toLowerCase())) {
+              toast({
+                  variant: "destructive",
+                  title: "Category Exists",
+                  description: `A category named "${data.category}" already exists.`,
+              });
+              return;
+          }
+          addCategory(data.category, data.icon, data.limit, data.color);
+          toast({
+              title: "Category Added",
+              description: `The "${data.category}" category has been added.`,
+          });
       }
-      addCategory(name, icon, limit);
-      toast({
-          title: "Category Added",
-          description: `The "${name}" category has been added to your budgets.`,
-      });
   };
 
   const handleDeleteCategory = (category: Category) => {
@@ -465,22 +532,24 @@ export function BudgetsClient() {
             key={budget.category}
             budget={budget}
             onUpdateLimit={updateBudgetLimit}
+            onEdit={handleOpenEditDialog}
             onDelete={handleDeleteCategory}
           />
         ))}
          <Card className="border-dashed border-2 hover:border-primary hover:text-primary transition-colors flex items-center justify-center min-h-[250px]">
             <CardHeader className="text-center">
-                <Button variant="ghost" className="w-full h-full text-lg" onClick={() => setIsAddCategoryOpen(true)}>
+                <Button variant="ghost" className="w-full h-full text-lg" onClick={handleOpenAddDialog}>
                     <PlusCircle className="mr-2 h-6 w-6"/>
                     Add Category
                 </Button>
             </CardHeader>
         </Card>
       </div>
-       <AddCategoryDialog 
-        open={isAddCategoryOpen}
-        onOpenChange={setIsAddCategoryOpen}
-        onAddCategory={handleAddCategory}
+       <CategoryDialog 
+        open={isCategoryDialogOpen}
+        onOpenChange={setIsCategoryDialogOpen}
+        onConfirm={handleDialogConfirm}
+        budgetToEdit={budgetToEdit}
       />
     </div>
   );
