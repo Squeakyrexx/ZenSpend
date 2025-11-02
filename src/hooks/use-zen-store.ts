@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 import type { Transaction, Budget, Category, RecurringPayment, Income, IncomeFrequency } from "@/lib/types";
 import { DEFAULT_BUDGETS } from "@/lib/data";
 import { useToast } from "./use-toast";
-import { isSameMonth, isPast, startOfMonth } from "date-fns";
+import { isSameMonth, isPast, startOfMonth, isToday } from "date-fns";
 
 const useLocalStorage = <T,>(key: string, initialValue: T) => {
   const [storedValue, setStoredValue] = useState<T>(() => {
@@ -155,14 +155,14 @@ export const useZenStore = () => {
     if (isInitialized) {
       const today = new Date();
       const newTransactions: Transaction[] = [];
-      const paymentsToUpdate = [...recurringPayments];
+      const updatedPayments = [...recurringPayments];
       let needsStateUpdate = false;
   
-      paymentsToUpdate.forEach((p, index) => {
+      updatedPayments.forEach((p, index) => {
         const dueDate = new Date(today.getFullYear(), today.getMonth(), p.dayOfMonth);
         const lastLoggedDate = p.lastLogged ? new Date(p.lastLogged) : null;
   
-        if (isPast(dueDate) && (!lastLoggedDate || !isSameMonth(dueDate, lastLoggedDate))) {
+        if ((isPast(dueDate) || isToday(dueDate)) && (!lastLoggedDate || !isSameMonth(dueDate, lastLoggedDate))) {
           const newTransaction: Transaction = {
             id: `recurring-${p.id}-${new Date().toISOString()}`,
             amount: p.amount,
@@ -172,7 +172,7 @@ export const useZenStore = () => {
             date: dueDate.toISOString(),
           };
           newTransactions.push(newTransaction);
-          paymentsToUpdate[index] = { ...p, lastLogged: today.toISOString() };
+          updatedPayments[index] = { ...p, lastLogged: today.toISOString() };
           needsStateUpdate = true;
           
           toast({
@@ -183,17 +183,17 @@ export const useZenStore = () => {
       });
       
       if (needsStateUpdate) {
-        setRecurringPayments(paymentsToUpdate);
+        setRecurringPayments(updatedPayments);
         setTransactions(prev => [...newTransactions, ...prev]);
         setInternalBudgets(prevBudgets => {
-            const newBudgets = [...prevBudgets];
+            const newBudgetsWithUpdates = [...prevBudgets];
              newTransactions.forEach(t => {
-                const budget = newBudgets.find(b => b.category === t.category);
-                if (budget) {
-                    budget.spent += t.amount;
+                const budgetIndex = newBudgetsWithUpdates.findIndex(b => b.category === t.category);
+                if (budgetIndex !== -1) {
+                    newBudgetsWithUpdates[budgetIndex].spent += t.amount;
                 }
             });
-            return newBudgets;
+            return newBudgetsWithUpdates;
         });
       }
     }
@@ -228,17 +228,6 @@ export const useZenStore = () => {
   const calculateMonthlyExpenses = useCallback(() => {
     const today = new Date();
     const startOfCurrentMonth = startOfMonth(today);
-
-    // This calculation now implicitly includes recurring payments because they are added to transactions
-    const oneTimeExpenses = transactions
-        .filter(t => isSameMonth(new Date(t.date), startOfCurrentMonth))
-        .reduce((sum, t) => sum + t.amount, 0);
-
-    const recurringExpenseTotal = recurringPayments.reduce((sum, p) => sum + p.amount, 0);
-    
-    // We get the transactions for the current month, and sum those.
-    // Then we add the sum of all recurring payments, since they are expected for the month.
-    // However, this leads to double counting if the recurring payment has already been logged.
     
     const monthlyTransactionsTotal = transactions
         .filter(t => isSameMonth(new Date(t.date), startOfCurrentMonth))
