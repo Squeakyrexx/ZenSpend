@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import type { Transaction, Budget, Category, RecurringPayment, Income, IncomeFrequency } from "@/lib/types";
 import { DEFAULT_BUDGETS } from "@/lib/data";
 import { useToast } from "./use-toast";
@@ -44,8 +44,8 @@ export const useZenStore = () => {
   const [isInitialized, setIsInitialized] = useState(false);
   const { toast } = useToast();
 
-  const categories = budgets.map(b => b.category);
-  const categoryIcons = budgets.reduce((acc, b) => ({ ...acc, [b.category]: b.icon }), {} as Record<string, string>);
+  const categories = useMemo(() => budgets.map(b => b.category), [budgets]);
+  const categoryIcons = useMemo(() => budgets.reduce((acc, b) => ({ ...acc, [b.category]: b.icon }), {} as Record<string, string>), [budgets]);
 
   const checkRecurringPayments = useCallback(() => {
     const today = new Date();

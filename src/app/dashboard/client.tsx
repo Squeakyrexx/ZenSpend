@@ -28,6 +28,7 @@ import {
 import type { ChartConfig } from '@/components/ui/chart';
 import { Button } from '@/components/ui/button';
 import { getInsights } from '../actions';
+import type { Insight } from '@/ai/flows/generate-spending-insights';
 import { Loader2, Sparkles, ArrowDown, ArrowUp, ArrowRight, BellRing } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
@@ -103,15 +104,15 @@ function UpcomingBillReminder({ upcomingPayments }: { upcomingPayments: any[] })
 
 
 export function DashboardClient() {
-  const { transactions, recurringPayments, budgets, isInitialized, categoryIcons, calculateMonthlyIncome, calculateMonthlyExpenses } =
+  const { transactions, recurringPayments, budgets, isInitialized, categoryIcons, calculateMonthlyIncome, calculateMonthlyExpenses, categories } =
     useZenStore();
-  const [insights, setInsights] = React.useState<string[]>([]);
+  const [insights, setInsights] = React.useState<Insight[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
 
   const handleGenerateInsights = async () => {
     setIsLoading(true);
     setInsights([]);
-    const result = await getInsights(transactions);
+    const result = await getInsights(transactions, categories);
     if (result && !('error' in result)) {
       setInsights(result.insights);
     }
@@ -343,8 +344,11 @@ export function DashboardClient() {
                         <div className="mt-4 space-y-2">
                         {insights.map((insight, index) => (
                             <div key={index} className="flex items-start gap-3 p-3 bg-secondary/50 rounded-lg text-sm">
-                                <Sparkles className="h-4 w-4 text-primary mt-1 flex-shrink-0"/>
-                                <p>{insight}</p>
+                                <Icon name={insight.icon} className="h-5 w-5 text-primary mt-1 flex-shrink-0"/>
+                                <div>
+                                    <p className="font-bold">{insight.title}</p>
+                                    <p className="text-muted-foreground">{insight.description}</p>
+                                </div>
                             </div>
                         ))}
                         </div>

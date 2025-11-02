@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -11,18 +12,21 @@ import {
 import { Button } from "@/components/ui/button";
 import { useZenStore } from "@/hooks/use-zen-store";
 import { getInsights } from "../actions";
+import type { Insight } from "@/ai/flows/generate-spending-insights";
 import { Loader2, Sparkles } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Icon } from "@/lib/icons";
+
 
 export function InsightsClient() {
-  const { transactions, isInitialized } = useZenStore();
-  const [insights, setInsights] = React.useState<string[]>([]);
+  const { transactions, isInitialized, categories } = useZenStore();
+  const [insights, setInsights] = React.useState<Insight[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
 
   const handleGenerateInsights = async () => {
     setIsLoading(true);
     setInsights([]);
-    const result = await getInsights(transactions);
+    const result = await getInsights(transactions, categories);
     if (result && !("error" in result)) {
       setInsights(result.insights);
     }
@@ -63,23 +67,31 @@ export function InsightsClient() {
           {isLoading && (
             <div className="mt-6 space-y-3">
               {[...Array(3)].map((_, i) => (
-                <div key={i} className="flex items-start gap-3 p-3 bg-secondary/50 rounded-lg">
-                    <Sparkles className="h-5 w-5 text-primary mt-1 flex-shrink-0"/>
-                    <Skeleton className="h-5 w-4/5" />
+                <div key={i} className="flex items-start gap-4 p-4 bg-secondary/50 rounded-lg">
+                    <Skeleton className="h-6 w-6 rounded" />
+                    <div className="space-y-2">
+                      <Skeleton className="h-5 w-32" />
+                      <Skeleton className="h-4 w-64" />
+                    </div>
                 </div>
               ))}
             </div>
           )}
 
           {insights.length > 0 && !isLoading && (
-            <div className="mt-6 space-y-3">
-              <h3 className="text-lg font-semibold">Your Latest Insights Report</h3>
-              {insights.map((insight, index) => (
-                <div key={index} className="flex items-start gap-3 p-4 bg-secondary/50 rounded-lg">
-                    <Sparkles className="h-5 w-5 text-primary mt-1 flex-shrink-0"/>
-                    <p>{insight}</p>
-                </div>
-              ))}
+            <div className="mt-6 space-y-4">
+              <h3 className="text-xl font-semibold">Your Latest Insights Report</h3>
+              <div className="grid gap-4 md:grid-cols-2">
+                {insights.map((insight, index) => (
+                  <Card key={index} className="flex items-start gap-4 p-4">
+                      <Icon name={insight.icon} className="h-8 w-8 text-primary mt-1 flex-shrink-0"/>
+                      <div>
+                        <p className="font-bold text-lg">{insight.title}</p>
+                        <p className="text-muted-foreground">{insight.description}</p>
+                      </div>
+                  </Card>
+                ))}
+              </div>
             </div>
           )}
 

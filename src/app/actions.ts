@@ -1,3 +1,4 @@
+
 "use server";
 
 import { extractTransactionDetails } from "@/ai/flows/extract-transaction-details";
@@ -33,12 +34,12 @@ export async function parseTransactionDescription(
   }
 }
 
-export async function getInsights(transactions: Transaction[]) {
+export async function getInsights(transactions: Transaction[], categories: Category[]) {
   try {
     if (transactions.length === 0) {
-        return { insights: ["No transactions yet. Start logging to see your insights!"], progress: "" };
+        return { insights: [] };
     }
-    const result = await generateSpendingInsights({ transactions });
+    const result = await generateSpendingInsights({ transactions, categories });
     return result;
   } catch(e) {
     console.error(e);
