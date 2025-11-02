@@ -11,6 +11,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -20,6 +29,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -29,12 +45,174 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowUpDown, Pencil, Trash2 } from "lucide-react";
+import { ArrowUpDown, Pencil, Trash2, CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Transaction } from "@/lib/types";
+import { Transaction, Category } from "@/lib/types";
 import { NumpadDialog } from "@/components/ui/numpad-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Icon } from "@/lib/icons.tsx";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+
+
+function EditTransactionDialog({
+  open,
+  onOpenChange,
+  onConfirm,
+  transaction
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: (transactionId: string, updates: Partial<Transaction>) => void;
+  transaction: Transaction | null;
+}) {
+  const { categories, categoryIcons } = useZenStore();
+  const [description, setDescription] = React.useState("");
+  const [amount, setAmount] = React.useState(0);
+  const [category, setCategory] = React.useState<Category | "">("");
+  const [date, setDate] = React.useState<Date | undefined>(undefined);
+  const [isNumpadOpen, setIsNumpadOpen] = React.useState(false);
+
+  const { toast } = useToast();
+
+  React.useEffect(() => {
+    if (transaction) {
+      setDescription(transaction.description);
+      setAmount(transaction.amount);
+      setCategory(transaction.category);
+      setDate(new Date(transaction.date));
+    }
+  }, [transaction, open]);
+
+  const handleAmountConfirm = (value: number) => {
+    if (value > 0) {
+        setAmount(value);
+    } else {
+        toast({
+            variant: "destructive",
+            title: "Invalid Amount",
+            description: "Please enter an amount greater than zero.",
+        });
+    }
+    setIsNumpadOpen(false);
+  }
+
+  const handleSubmit = () => {
+    if (!transaction) return;
+
+    if (!description.trim() || !amount || amount <= 0 || !category || !date) {
+      toast({
+        variant: "destructive",
+        title: "Invalid Information",
+        description: "Please fill out all fields correctly.",
+      });
+      return;
+    }
+
+    onConfirm(transaction.id, {
+      description,
+      amount,
+      category,
+      icon: categoryIcons[category] || "Landmark",
+      date: date.toISOString(),
+    });
+
+    onOpenChange(false);
+  };
+
+  return (
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Transaction</DialogTitle>
+            <DialogDescription>Update the details of your expense.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Input
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="e.g. Lunch with friends"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="amount">Amount</Label>
+                 <Button variant="outline" className="w-full justify-start font-normal" onClick={() => setIsNumpadOpen(true)}>
+                    {amount > 0 ? `$${amount.toFixed(2)}` : "Set Amount"}
+                </Button>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="date">Date</Label>
+                <Popover>
+                    <PopoverTrigger asChild>
+                        <Button
+                        variant={"outline"}
+                        className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !date && "text-muted-foreground"
+                        )}
+                        >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {date ? format(date, "PPP") : <span>Pick a date</span>}
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                        <Calendar
+                        mode="single"
+                        selected={date}
+                        onSelect={setDate}
+                        initialFocus
+                        />
+                    </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="category">Category</Label>
+              <Select onValueChange={(value) => setCategory(value)} value={category}>
+                <SelectTrigger id="category">
+                  <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat} value={cat}>
+                      <div className="flex items-center gap-2">
+                         <Icon name={categoryIcons[cat] || 'Landmark'} className="h-4 w-4" />
+                         {cat}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button onClick={handleSubmit}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <NumpadDialog
+        open={isNumpadOpen}
+        onOpenChange={setIsNumpadOpen}
+        onConfirm={handleAmountConfirm}
+        initialValue={amount}
+        title="Set Transaction Amount"
+        description="Enter the updated amount for this transaction."
+      />
+    </>
+  );
+}
 
 
 type SortKey = "description" | "category" | "amount" | "date";
@@ -59,23 +237,12 @@ export function TransactionsClient() {
     }
   };
 
-  const handleEditAmount = (newAmount: number) => {
-    if (editingTransaction) {
-      if (newAmount > 0) {
-        updateTransaction(editingTransaction.id, { amount: newAmount });
-        toast({
-            title: "Transaction Updated",
-            description: `Amount set to $${newAmount.toFixed(2)}.`,
-        });
-      } else {
-         toast({
-            variant: "destructive",
-            title: "Invalid Amount",
-            description: `Please enter a number greater than zero.`,
-        });
-      }
-      setEditingTransaction(null);
-    }
+  const handleEditConfirm = (transactionId: string, updates: Partial<Transaction>) => {
+    updateTransaction(transactionId, updates);
+    toast({
+        title: "Transaction Updated",
+        description: `Your changes to "${updates.description}" have been saved.`,
+    });
   };
 
   const handleDelete = () => {
@@ -91,8 +258,14 @@ export function TransactionsClient() {
 
   const sortedTransactions = React.useMemo(() => {
     return [...transactions].sort((a, b) => {
-      const aVal = a[sortKey];
-      const bVal = b[sortKey];
+      let aVal = a[sortKey];
+      let bVal = b[sortKey];
+
+      // Handle date sorting properly
+      if (sortKey === 'date') {
+        aVal = new Date(a.date).getTime();
+        bVal = new Date(b.date).getTime();
+      }
 
       let comparison = 0;
       if (typeof aVal === "string" && typeof bVal === "string") {
@@ -218,16 +391,12 @@ export function TransactionsClient() {
         </CardContent>
       </Card>
       
-      {editingTransaction && (
-         <NumpadDialog
-            open={!!editingTransaction}
-            onOpenChange={(open) => !open && setEditingTransaction(null)}
-            onConfirm={handleEditAmount}
-            initialValue={editingTransaction.amount}
-            title="Edit Transaction Amount"
-            description={`Update the amount for "${editingTransaction.description}"`}
-         />
-      )}
+      <EditTransactionDialog
+        open={!!editingTransaction}
+        onOpenChange={(open) => !open && setEditingTransaction(null)}
+        onConfirm={handleEditConfirm}
+        transaction={editingTransaction}
+      />
 
       {deletingTransaction && (
         <AlertDialog

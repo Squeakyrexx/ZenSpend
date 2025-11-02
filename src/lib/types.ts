@@ -36,4 +36,5 @@ export interface RecurringPayment {
   category: Category;
   icon: string;
   dayOfMonth: number;
+  lastLogged: string | null; // ISO string
 }

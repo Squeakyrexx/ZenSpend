@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Icon } from '@/lib/icons.tsx';
-import { format, differenceInDays, isPast, addMonths } from 'date-fns';
+import { format, differenceInDays, isPast, addMonths, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import {
   Bar,
   BarChart,
@@ -27,7 +27,7 @@ import {
 import type { ChartConfig } from '@/components/ui/chart';
 import { Button } from '@/components/ui/button';
 import { getInsights } from '../actions';
-import { Loader2, Sparkles } from 'lucide-react';
+import { Loader2, Sparkles, ArrowDown, ArrowUp } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -38,6 +38,41 @@ const chartConfig = {
     color: 'hsl(var(--chart-1))',
   },
 } satisfies ChartConfig;
+
+function MonthlySnapshotCard({ current, previous }: { current: number, previous: number }) {
+    const difference = current - previous;
+    const percentageChange = previous > 0 ? (difference / previous) * 100 : current > 0 ? 100 : 0;
+    const isIncrease = difference > 0;
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle className="text-xl">Monthly Snapshot</CardTitle>
+                <CardDescription>Your spending this month vs. last month.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div>
+                    <p className="text-sm text-muted-foreground">This Month</p>
+                    <p className="text-2xl font-bold">${current.toFixed(2)}</p>
+                </div>
+                 <div>
+                    <p className="text-sm text-muted-foreground">Last Month</p>
+                    <p className="text-2xl font-bold">${previous.toFixed(2)}</p>
+                </div>
+                 <div className="flex items-center gap-2">
+                    <div className={cn("flex items-center gap-1 font-bold", isIncrease ? "text-red-500" : "text-green-500")}>
+                        {isIncrease ? <ArrowUp className="h-4 w-4"/> : <ArrowDown className="h-4 w-4"/>}
+                        <span>{Math.abs(percentageChange).toFixed(1)}%</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                        {isIncrease ? "more" : "less"} than last month
+                    </p>
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
 
 export function DashboardClient() {
   const { transactions, recurringPayments, budgets, isInitialized, categoryIcons } =
@@ -85,7 +120,7 @@ export function DashboardClient() {
   const topBudgets = React.useMemo(() => {
     return [...budgets]
         .sort((a,b) => (b.spent / b.limit) - (a.spent / a.limit))
-        .slice(0, 4);
+        .slice(0, 3);
   }, [budgets]);
 
   const spendingByCategory = React.useMemo(() => {
@@ -96,6 +131,29 @@ export function DashboardClient() {
     return Object.entries(categoryMap)
       .map(([name, total]) => ({ name, total }))
       .sort((a, b) => b.total - a.total);
+  }, [transactions]);
+
+  const { currentMonthSpending, previousMonthSpending } = React.useMemo(() => {
+    const today = new Date();
+    const startOfCurrentMonth = startOfMonth(today);
+    const endOfCurrentMonth = endOfMonth(today);
+    const startOfPreviousMonth = startOfMonth(subMonths(today, 1));
+    const endOfPreviousMonth = endOfMonth(subMonths(today, 1));
+
+    let currentMonthSpending = 0;
+    let previousMonthSpending = 0;
+
+    transactions.forEach(t => {
+        const transactionDate = new Date(t.date);
+        if (transactionDate >= startOfCurrentMonth && transactionDate <= endOfCurrentMonth) {
+            currentMonthSpending += t.amount;
+        }
+        if (transactionDate >= startOfPreviousMonth && transactionDate <= endOfPreviousMonth) {
+            previousMonthSpending += t.amount;
+        }
+    });
+
+    return { currentMonthSpending, previousMonthSpending };
   }, [transactions]);
   
   const getProgressColor = (progress: number) => {
@@ -139,6 +197,7 @@ export function DashboardClient() {
       </Card>
       
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <MonthlySnapshotCard current={currentMonthSpending} previous={previousMonthSpending} />
         {topBudgets.map(budget => {
             const progress = budget.limit > 0 ? (budget.spent / budget.limit) * 100 : 0;
             return (

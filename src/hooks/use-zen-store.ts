@@ -4,6 +4,8 @@
 import { useState, useEffect, useCallback } from "react";
 import type { Transaction, Budget, Category, RecurringPayment } from "@/lib/types";
 import { DEFAULT_BUDGETS } from "@/lib/data";
+import { useToast } from "./use-toast";
+import { isSameMonth, isPast } from "date-fns";
 
 const useLocalStorage = <T,>(key: string, initialValue: T) => {
   const [storedValue, setStoredValue] = useState<T>(() => {
@@ -39,13 +41,16 @@ export const useZenStore = () => {
   const [budgets, setBudgets] = useLocalStorage<Budget[]>("zen-budgets", DEFAULT_BUDGETS);
   const [recurringPayments, setRecurringPayments] = useLocalStorage<RecurringPayment[]>("zen-recurring-payments", []);
   const [isInitialized, setIsInitialized] = useState(false);
+  const { toast } = useToast();
 
   const categories = budgets.map(b => b.category);
   const categoryIcons = budgets.reduce((acc, b) => ({ ...acc, [b.category]: b.icon }), {} as Record<string, string>);
 
   useEffect(() => {
-    setIsInitialized(true);
-  }, []);
+    if (!isInitialized) {
+        setIsInitialized(true);
+    }
+  }, [isInitialized]);
 
   const addTransaction = useCallback((transaction: Transaction) => {
       setTransactions(prev => [transaction, ...prev]);
@@ -82,11 +87,11 @@ export const useZenStore = () => {
   );
   
   const addRecurringPayment = useCallback((payment: Omit<RecurringPayment, 'id'>) => {
-      const newPayment = { ...payment, id: new Date().toISOString() + Math.random() };
+      const newPayment = { ...payment, id: new Date().toISOString() + Math.random(), lastLogged: null };
       setRecurringPayments(prev => [...prev, newPayment]);
   }, [setRecurringPayments]);
 
-  const updateRecurringPayment = useCallback((paymentId: string, updates: Omit<RecurringPayment, 'id'>) => {
+  const updateRecurringPayment = useCallback((paymentId: string, updates: Partial<Omit<RecurringPayment, 'id'>>) => {
     setRecurringPayments(prev => prev.map(p => p.id === paymentId ? { ...p, ...updates } : p));
   }, [setRecurringPayments]);
   
@@ -117,6 +122,47 @@ export const useZenStore = () => {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [transactions, isInitialized]);
+  
+  // Check for due recurring payments
+  useEffect(() => {
+    if (isInitialized) {
+      const today = new Date();
+      const newTransactions: Transaction[] = [];
+      const updatedPayments: RecurringPayment[] = [];
+
+      recurringPayments.forEach(p => {
+        const dueDate = new Date(today.getFullYear(), today.getMonth(), p.dayOfMonth);
+        const lastLoggedDate = p.lastLogged ? new Date(p.lastLogged) : null;
+        
+        // Is the payment due this month and has it not been logged this month?
+        if (isPast(dueDate) && (!lastLoggedDate || !isSameMonth(dueDate, lastLoggedDate))) {
+          const newTransaction: Transaction = {
+            id: `recurring-${p.id}-${new Date().toISOString()}`,
+            amount: p.amount,
+            description: p.description,
+            category: p.category,
+            icon: p.icon,
+            date: dueDate.toISOString(),
+          };
+          newTransactions.push(newTransaction);
+          updatedPayments.push({ ...p, lastLogged: today.toISOString() });
+          
+          toast({
+            title: "Recurring Payment Logged",
+            description: `Automatically logged "${p.description}" for $${p.amount.toFixed(2)}.`,
+          });
+        } else {
+            updatedPayments.push(p);
+        }
+      });
+      
+      if (newTransactions.length > 0) {
+        setTransactions(prev => [...newTransactions, ...prev]);
+        setRecurringPayments(updatedPayments);
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isInitialized]);
 
 
   return { 
