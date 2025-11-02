@@ -47,70 +47,67 @@ export const useZenStore = () => {
   const categories = useMemo(() => budgets.map(b => b.category), [budgets]);
   const categoryIcons = useMemo(() => budgets.reduce((acc, b) => ({ ...acc, [b.category]: b.icon }), {} as Record<string, string>), [budgets]);
 
-  const checkRecurringPayments = useCallback(() => {
-    const today = new Date();
-    const newTransactions: Transaction[] = [];
-    let somethingChanged = false;
-
-    const updatedPayments = recurringPayments.map(p => {
-        const lastLoggedDate = p.lastLogged ? new Date(p.lastLogged) : null;
-        const dueDateInCurrentMonth = new Date(today.getFullYear(), today.getMonth(), p.dayOfMonth);
-
-        if ((isPast(dueDateInCurrentMonth) || isToday(dueDateInCurrentMonth)) && (!lastLoggedDate || !isSameMonth(lastLoggedDate, today))) {
-            const transaction: Transaction = {
-                id: `recurring-${p.id}-${dueDateInCurrentMonth.toISOString()}`,
-                amount: p.amount,
-                description: p.description,
-                category: p.category,
-                icon: p.icon,
-                date: dueDateInCurrentMonth.toISOString(),
-            };
-            newTransactions.push(transaction);
-
-            toast({
-                title: "Recurring Payment Logged",
-                description: `Automatically logged "${p.description}" for $${p.amount.toFixed(2)}.`,
-            });
-            
-            somethingChanged = true;
-            return { ...p, lastLogged: today.toISOString() };
-        }
-        return p;
-    });
-
-    if (somethingChanged) {
-        setTransactions(current => [...newTransactions, ...current]);
-        setRecurringPayments(updatedPayments);
-    }
-  }, [recurringPayments, setRecurringPayments, setTransactions, toast]);
-
+  // --- Automatic Recurring Payment Logging ---
   useEffect(() => {
     if (!isInitialized) {
-        setIsInitialized(true);
-        checkRecurringPayments();
+      const today = new Date();
+      const newTransactions: Transaction[] = [];
+      let somethingChanged = false;
+
+      const updatedPayments = recurringPayments.map(p => {
+          const lastLoggedDate = p.lastLogged ? new Date(p.lastLogged) : null;
+          const dueDateInCurrentMonth = new Date(today.getFullYear(), today.getMonth(), p.dayOfMonth);
+
+          if ((isPast(dueDateInCurrentMonth) || isToday(dueDateInCurrentMonth)) && (!lastLoggedDate || !isSameMonth(lastLoggedDate, today))) {
+              const transaction: Transaction = {
+                  id: `recurring-${p.id}-${dueDateInCurrentMonth.toISOString()}`,
+                  amount: p.amount,
+                  description: p.description,
+                  category: p.category,
+                  icon: p.icon,
+                  date: dueDateInCurrentMonth.toISOString(),
+              };
+              newTransactions.push(transaction);
+
+              toast({
+                  title: "Recurring Payment Logged",
+                  description: `Automatically logged "${p.description}" for $${p.amount.toFixed(2)}.`,
+              });
+              
+              somethingChanged = true;
+              return { ...p, lastLogged: today.toISOString() };
+          }
+          return p;
+      });
+
+      if (somethingChanged) {
+          setTransactions(current => [...newTransactions, ...current]);
+          setRecurringPayments(updatedPayments);
+      }
+      setIsInitialized(true);
     }
-  }, [isInitialized, checkRecurringPayments]);
+  }, [isInitialized, recurringPayments, setRecurringPayments, setTransactions, toast]);
+
 
   // --- TRANSACTIONS ---
-  const addTransaction = useCallback((transaction: Transaction) => {
+  const addTransaction = (transaction: Transaction) => {
       setTransactions(prev => [transaction, ...prev]);
-    }, [setTransactions]
-  );
+  };
   
-  const updateTransaction = useCallback((transactionId: string, updates: Partial<Transaction>) => {
+  const updateTransaction = (transactionId: string, updates: Partial<Transaction>) => {
     setTransactions(prev => prev.map(t => t.id === transactionId ? { ...t, ...updates } : t));
-  }, [setTransactions]);
+  };
 
-  const deleteTransaction = useCallback((transactionId: string) => {
+  const deleteTransaction = (transactionId: string) => {
     setTransactions(prev => prev.filter(t => t.id !== transactionId));
-  }, [setTransactions]);
+  };
 
   // --- BUDGETS & CATEGORIES ---
-  const setBudgets = useCallback((newBudgets: Budget[]) => {
+  const setBudgets = (newBudgets: Budget[]) => {
     setInternalBudgets(newBudgets);
-  }, [setInternalBudgets]);
+  };
 
-  const updateBudgetLimit = useCallback((category: Category, newLimit: number) => {
+  const updateBudgetLimit = (category: Category, newLimit: number) => {
       setInternalBudgets(prev => 
         prev.map(budget => 
           budget.category === category
@@ -118,64 +115,61 @@ export const useZenStore = () => {
             : budget
         )
       );
-    }, [setInternalBudgets]
-  );
+  };
   
-  const addCategory = useCallback((category: string, icon: string, limit: number, color: string) => {
+  const addCategory = (category: string, icon: string, limit: number, color: string) => {
     setInternalBudgets(prev => [...prev, { category, icon, limit, spent: 0, color }]);
-  }, [setInternalBudgets]);
+  };
   
-  const updateCategory = useCallback((originalCategory: string, updates: Partial<Omit<Budget, 'spent'>>) => {
+  const updateCategory = (originalCategory: string, updates: Partial<Omit<Budget, 'spent'>>) => {
     setInternalBudgets(prev => prev.map(b => b.category === originalCategory ? {...b, ...updates} : b));
     if (updates.category && updates.category !== originalCategory) {
       setTransactions(prev => prev.map(t => t.category === originalCategory ? {...t, category: updates.category!} : t));
       setRecurringPayments(prev => prev.map(p => p.category === originalCategory ? {...p, category: updates.category!} : p));
     }
-  }, [setInternalBudgets, setTransactions, setRecurringPayments]);
+  };
 
-  const deleteCategory = useCallback((category: Category) => {
+  const deleteCategory = (category: Category) => {
       setInternalBudgets(prev => prev.filter(b => b.category !== category));
       setTransactions(prev => prev.filter(t => t.category !== category));
       setRecurringPayments(prev => prev.filter(p => p.category !== category));
-    }, [setInternalBudgets, setTransactions, setRecurringPayments]
-  );
+  };
   
   // --- RECURRING PAYMENTS ---
-  const addRecurringPayment = useCallback((payment: Omit<RecurringPayment, 'id'>) => {
+  const addRecurringPayment = (payment: Omit<RecurringPayment, 'id'>) => {
       const newPayment = { ...payment, id: new Date().toISOString() + Math.random(), lastLogged: null };
       setRecurringPayments(prev => [...prev, newPayment]);
-  }, [setRecurringPayments]);
+  };
 
-  const updateRecurringPayment = useCallback((paymentId: string, updates: Partial<Omit<RecurringPayment, 'id'>>) => {
+  const updateRecurringPayment = (paymentId: string, updates: Partial<Omit<RecurringPayment, 'id'>>) => {
     setRecurringPayments(prev => prev.map(p => p.id === paymentId ? { ...p, ...updates } : p));
-  }, [setRecurringPayments]);
+  };
   
-  const deleteRecurringPayment = useCallback((paymentId: string) => {
+  const deleteRecurringPayment = (paymentId: string) => {
     setRecurringPayments(prev => prev.filter(p => p.id !== paymentId));
-  }, [setRecurringPayments]);
+  };
 
   // --- INCOME ---
-  const addIncome = useCallback((income: Omit<Income, 'id'>) => {
+  const addIncome = (income: Omit<Income, 'id'>) => {
     const newIncome = { ...income, id: new Date().toISOString() + Math.random() };
     setIncomes(prev => [...prev, newIncome]);
-  }, [setIncomes]);
+  };
 
-  const updateIncome = useCallback((incomeId: string, updates: Partial<Omit<Income, 'id'>>) => {
+  const updateIncome = (incomeId: string, updates: Partial<Omit<Income, 'id'>>) => {
     setIncomes(prev => prev.map(i => i.id === incomeId ? { ...i, ...updates } : i));
-  }, [setIncomes]);
+  };
 
-  const deleteIncome = useCallback((incomeId: string) => {
+  const deleteIncome = (incomeId: string) => {
     setIncomes(prev => prev.filter(i => i.id !== incomeId));
-  }, [setIncomes]);
+  };
   
 
-  const resetData = useCallback(() => {
+  const resetData = () => {
       setTransactions([]);
       setInternalBudgets(DEFAULT_BUDGETS);
       setRecurringPayments([]);
       setIncomes([]);
-    }, [setTransactions, setInternalBudgets, setRecurringPayments, setIncomes]
-  );
+  };
   
   // Recalculate budget spent amounts whenever transactions or recurring payments change
   useEffect(() => {
@@ -264,6 +258,8 @@ export const useZenStore = () => {
   return { 
     transactions, 
     budgets, 
+    recurringPayments,
+    incomes,
     categories,
     categoryIcons,
     addTransaction,
