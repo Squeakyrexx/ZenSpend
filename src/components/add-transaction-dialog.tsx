@@ -2,29 +2,55 @@
 "use client";
 
 import * as React from "react";
-import { Loader2, Sparkles, ArrowRight, Check, Undo2, X } from "lucide-react";
+import { Loader2, Sparkles, ArrowRight, Check, Undo2, X, CalendarIcon } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useZenStore } from "@/hooks/use-zen-store";
-import type { Transaction } from "@/lib/types";
+import type { Transaction, Category } from "@/lib/types";
 import { parseTransactionDescription } from "@/app/actions";
 import { Numpad } from "@/components/ui/numpad";
 import { Icon } from "@/lib/icons.tsx";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
-type Step = "amount" | "description" | "loading" | "done";
+type Step = "amount" | "description" | "loading" | "confirm" | "done";
+
+interface ParsedResult {
+  description: string;
+  category: Category;
+  icon: string;
+}
 
 export function AddTransactionView({ onComplete }: { onComplete: () => void }) {
-  const { addTransaction, deleteTransaction, categories } = useZenStore();
+  const { addTransaction, deleteTransaction, categories, categoryIcons } = useZenStore();
   const { toast } = useToast();
   
   const [step, setStep] = React.useState<Step>("amount");
   const [amount, setAmount] = React.useState(0);
-  const [description, setDescription] = React.useState("");
+  const [descriptionInput, setDescriptionInput] = React.useState("");
   const [lastTransaction, setLastTransaction] = React.useState<Transaction | null>(null);
+
+  // State for the confirmation step
+  const [parsedResult, setParsedResult] = React.useState<ParsedResult | null>(null);
+  const [finalDescription, setFinalDescription] = React.useState("");
+  const [finalCategory, setFinalCategory] = React.useState<Category | "">("");
+  const [finalDate, setFinalDate] = React.useState<Date>(new Date());
+
 
   const resetTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
@@ -42,7 +68,7 @@ export function AddTransactionView({ onComplete }: { onComplete: () => void }) {
   };
   
   const handleDescriptionSubmit = async () => {
-    if (!description.trim()) {
+    if (!descriptionInput.trim()) {
       toast({
         variant: "destructive",
         title: "Invalid Description",
@@ -53,7 +79,7 @@ export function AddTransactionView({ onComplete }: { onComplete: () => void }) {
 
     setStep("loading");
     setLastTransaction(null);
-    const result = await parseTransactionDescription(description, categories);
+    const result = await parseTransactionDescription(descriptionInput, categories);
 
     if ("error" in result) {
       toast({
@@ -63,21 +89,43 @@ export function AddTransactionView({ onComplete }: { onComplete: () => void }) {
       });
       setStep("description"); // Go back to description step on error
     } else {
-      const newTransaction: Transaction = {
-        ...result,
-        id: new Date().toISOString() + Math.random(),
-        date: new Date().toISOString(),
-        amount,
-      };
-      addTransaction(newTransaction);
-      setLastTransaction(newTransaction);
-      setStep("done");
-
-      resetTimeoutRef.current = setTimeout(() => {
-        handleReset(true);
-      }, 3000); 
+      const confirmedResult = result as ParsedResult;
+      setParsedResult(confirmedResult);
+      setFinalDescription(confirmedResult.description);
+      setFinalCategory(confirmedResult.category);
+      setFinalDate(new Date());
+      setStep("confirm");
     }
   };
+  
+  const handleConfirmSubmit = () => {
+    if (!finalDescription || !finalCategory || !finalDate) {
+         toast({
+            variant: "destructive",
+            title: "Missing Information",
+            description: "Please ensure all fields are filled out.",
+         });
+        return;
+    }
+
+    const newTransaction: Transaction = {
+      id: new Date().toISOString() + Math.random(),
+      amount,
+      description: finalDescription,
+      category: finalCategory,
+      icon: categoryIcons[finalCategory] || 'Landmark',
+      date: finalDate.toISOString(),
+    };
+    
+    addTransaction(newTransaction);
+    setLastTransaction(newTransaction);
+    setStep("done");
+
+    resetTimeoutRef.current = setTimeout(() => {
+      handleReset(true);
+    }, 3000); 
+  };
+
 
   const handleReset = (closeDialog: boolean = false) => {
     if (resetTimeoutRef.current) {
@@ -86,8 +134,9 @@ export function AddTransactionView({ onComplete }: { onComplete: () => void }) {
     }
     setStep("amount");
     setAmount(0);
-    setDescription("");
+    setDescriptionInput("");
     setLastTransaction(null);
+    setParsedResult(null);
     if(closeDialog && onComplete) {
         onComplete();
     }
@@ -108,6 +157,7 @@ export function AddTransactionView({ onComplete }: { onComplete: () => void }) {
     amount: "What did you spend?",
     description: "What did you buy?",
     loading: "Analyzing...",
+    confirm: "Confirm Details",
     done: "Transaction Logged!"
   }[step];
 
@@ -115,6 +165,7 @@ export function AddTransactionView({ onComplete }: { onComplete: () => void }) {
     amount: "Use the keypad to enter the transaction amount.",
     description: `You spent $${amount.toFixed(2)}. Now, describe the purchase.`,
     loading: "AI is categorizing your transaction...",
+    confirm: "Review and confirm the transaction details below.",
     done: "Your expense has been logged successfully."
   }[step];
   
@@ -150,8 +201,8 @@ export function AddTransactionView({ onComplete }: { onComplete: () => void }) {
                      <Textarea
                        placeholder="e.g. Lunch with friends, gas, new shoes"
                        className="min-h-[100px] text-lg rounded-xl focus-visible:ring-offset-4 focus-visible:ring-primary/50"
-                       value={description}
-                       onChange={(e) => setDescription(e.target.value)}
+                       value={descriptionInput}
+                       onChange={(e) => setDescriptionInput(e.target.value)}
                        autoFocus
                      />
                      <div className="flex gap-2">
@@ -163,6 +214,72 @@ export function AddTransactionView({ onComplete }: { onComplete: () => void }) {
                      </div>
                    </div>
                 )}
+                
+                {step === 'confirm' && parsedResult && (
+                   <div className="space-y-4">
+                      <div className="space-y-2">
+                         <Label htmlFor="confirm-description">Description</Label>
+                         <Input id="confirm-description" value={finalDescription} onChange={(e) => setFinalDescription(e.target.value)} />
+                      </div>
+                       <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label>Amount</Label>
+                            <Input value={`$${amount.toFixed(2)}`} readOnly disabled />
+                        </div>
+                        <div className="space-y-2">
+                           <Label htmlFor="date">Date</Label>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                    variant={"outline"}
+                                    className={cn(
+                                        "w-full justify-start text-left font-normal",
+                                        !finalDate && "text-muted-foreground"
+                                    )}
+                                    >
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {finalDate ? format(finalDate, "PPP") : <span>Pick a date</span>}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0">
+                                    <Calendar
+                                    mode="single"
+                                    selected={finalDate}
+                                    onSelect={(d) => d && setFinalDate(d)}
+                                    initialFocus
+                                    />
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+                       </div>
+                       <div className="space-y-2">
+                         <Label htmlFor="confirm-category">Category</Label>
+                         <Select onValueChange={(value: Category) => setFinalCategory(value)} value={finalCategory}>
+                            <SelectTrigger id="confirm-category">
+                                <SelectValue placeholder="Select a category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {categories.map((cat) => (
+                                <SelectItem key={cat} value={cat}>
+                                    <div className="flex items-center gap-2">
+                                        <Icon name={categoryIcons[cat] || 'Landmark'} className="h-4 w-4" />
+                                        {cat}
+                                    </div>
+                                </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                       </div>
+                     <div className="flex gap-2 pt-4">
+                        <Button variant="outline" onClick={() => setStep('description')}><Undo2/> Back</Button>
+                        <Button onClick={handleConfirmSubmit} className="w-full">
+                         <Check className="mr-2 h-5 w-5" />
+                         Confirm Transaction
+                       </Button>
+                     </div>
+                   </div>
+                )}
+
 
                 {(step === "loading" || step === "done") && (
                    <div className="flex flex-col items-center justify-center text-center min-h-[404px]">
@@ -218,3 +335,5 @@ export function AddTransactionDialog({ open, onOpenChange }: { open: boolean, on
         </Dialog>
     )
 }
+
+    
