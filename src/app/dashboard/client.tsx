@@ -104,7 +104,7 @@ export function DashboardClient() {
   const handleGenerateInsights = async () => {
     setIsLoading(true);
     setInsights([]);
-    const result = await getInsights(transactions, categories);
+    const result = await getInsights(transactions, categories, budgets);
     if (result && !('error' in result)) {
       setInsights(result.insights);
     }
