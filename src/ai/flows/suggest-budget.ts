@@ -25,23 +25,27 @@ const SuggestBudgetInputSchema = z.object({
 });
 export type SuggestBudgetInput = z.infer<typeof SuggestBudgetInputSchema>;
 
-const SuggestBudgetOutputSchema = z.record(z.string(), z.number())
-    .describe('An object where keys are category names and values are the suggested budget limits.');
-export type SuggestBudgetOutput = z.infer<typeof SuggestBudgetOutputSchema>;
+export type SuggestBudgetOutput = Record<string, number>;
+
 
 export async function suggestBudget(input: SuggestBudgetInput): Promise<SuggestBudgetOutput> {
-  return suggestBudgetFlow(input);
-}
+  // Dynamically create the output schema based on the provided categories
+  const categoryBudgets = input.categories.reduce((acc, category) => {
+    acc[category] = z.number().describe(`The suggested budget for ${category}.`);
+    return acc;
+  }, {} as Record<string, z.ZodNumber>);
+  
+  const SuggestBudgetOutputSchema = z.object(categoryBudgets);
 
-const prompt = ai.definePrompt({
-  name: 'suggestBudgetPrompt',
-  input: {schema: SuggestBudgetInputSchema},
-  output: {schema: SuggestBudgetOutputSchema},
-  prompt: `You are a helpful personal finance assistant. Your goal is to help a user create a reasonable monthly budget.
+  const prompt = ai.definePrompt({
+    name: 'suggestBudgetPrompt',
+    input: {schema: SuggestBudgetInputSchema},
+    output: {schema: SuggestBudgetOutputSchema},
+    prompt: `You are a helpful personal finance assistant. Your goal is to help a user create a reasonable monthly budget.
 
 You will be given the user's total monthly income, their transaction history for the past month, and their existing list of budget categories.
 
-Analyze their income and spending patterns. A good budget should be realistic. Use their past spending in each category as a baseline, but also consider standard budgeting principles (like the 50/30/20 rule for needs, wants, and savings, but don't mention it explicitly).
+Analyze their income and spending patterns. A good budget should be realistic. Use their past spending in each category as a baseline, but also consider standard budgeting principles (like the 50/30/20 rule, but don't mention it explicitly).
 
 Based on your analysis, provide a suggested monthly budget limit for each of the user's categories. The sum of all suggested budget limits should not exceed their monthly income.
 
@@ -57,18 +61,10 @@ Past Month's Transactions:
 - Category: {{category}}, Amount: {{amount}}
 {{/each}}
 
-Return the suggestions as a JSON object where the keys are the category names and the values are the suggested numerical budget limits. IMPORTANT: If a category name contains a space or special character, it MUST be enclosed in double quotes to be a valid JSON key.
+Return the suggestions as a JSON object where the keys are the category names and the values are the suggested numerical budget limits. IMPORTANT: The JSON keys must be the exact category names provided. Make sure to enclose any category names that contain spaces or special characters in double quotes.
 `,
-});
+  });
 
-const suggestBudgetFlow = ai.defineFlow(
-  {
-    name: 'suggestBudgetFlow',
-    inputSchema: SuggestBudgetInputSchema,
-    outputSchema: SuggestBudgetOutputSchema,
-  },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
-  }
-);
+  const {output} = await prompt(input);
+  return output!;
+}
