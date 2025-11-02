@@ -38,7 +38,7 @@ const useLocalStorage = <T,>(key: string, initialValue: T) => {
 
 export const useZenStore = () => {
   const [transactions, setTransactions] = useLocalStorage<Transaction[]>("zen-transactions", []);
-  const [budgets, setBudgets] = useLocalStorage<Budget[]>("zen-budgets", DEFAULT_BUDGETS);
+  const [budgets, setInternalBudgets] = useLocalStorage<Budget[]>("zen-budgets", DEFAULT_BUDGETS);
   const [recurringPayments, setRecurringPayments] = useLocalStorage<RecurringPayment[]>("zen-recurring-payments", []);
   const [incomes, setIncomes] = useLocalStorage<Income[]>("zen-incomes", []);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -68,26 +68,30 @@ export const useZenStore = () => {
   }, [setTransactions]);
 
   // --- BUDGETS & CATEGORIES ---
+  const setBudgets = useCallback((newBudgets: Budget[]) => {
+    setInternalBudgets(newBudgets);
+  }, [setInternalBudgets]);
+
   const updateBudgetLimit = useCallback((category: Category, newLimit: number) => {
-      setBudgets(prev => 
+      setInternalBudgets(prev => 
         prev.map(budget => 
           budget.category === category
             ? { ...budget, limit: newLimit }
             : budget
         )
       );
-    }, [setBudgets]
+    }, [setInternalBudgets]
   );
   
   const addCategory = useCallback((category: string, icon: string, limit: number) => {
-    setBudgets(prev => [...prev, { category, icon, limit, spent: 0}]);
-  }, [setBudgets]);
+    setInternalBudgets(prev => [...prev, { category, icon, limit, spent: 0}]);
+  }, [setInternalBudgets]);
 
   const deleteCategory = useCallback((category: Category) => {
-      setBudgets(prev => prev.filter(b => b.category !== category));
+      setInternalBudgets(prev => prev.filter(b => b.category !== category));
       setTransactions(prev => prev.filter(t => t.category !== category));
       setRecurringPayments(prev => prev.filter(p => p.category !== category));
-    }, [setBudgets, setTransactions, setRecurringPayments]
+    }, [setInternalBudgets, setTransactions, setRecurringPayments]
   );
   
   // --- RECURRING PAYMENTS ---
@@ -121,10 +125,10 @@ export const useZenStore = () => {
 
   const resetData = useCallback(() => {
       setTransactions([]);
-      setBudgets(DEFAULT_BUDGETS);
+      setInternalBudgets(DEFAULT_BUDGETS);
       setRecurringPayments([]);
       setIncomes([]);
-    }, [setTransactions, setBudgets, setRecurringPayments, setIncomes]
+    }, [setTransactions, setInternalBudgets, setRecurringPayments, setIncomes]
   );
   
   // Recalculate budget spent amounts whenever transactions change
@@ -141,7 +145,7 @@ export const useZenStore = () => {
                 budget.spent += t.amount;
             }
         });
-        setBudgets(newBudgets);
+        setInternalBudgets(newBudgets);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [transactions, isInitialized]);
@@ -241,6 +245,7 @@ export const useZenStore = () => {
     deleteTransaction,
     addCategory,
     deleteCategory,
+    setBudgets,
     updateBudgetLimit, 
     addRecurringPayment,
     updateRecurringPayment,
