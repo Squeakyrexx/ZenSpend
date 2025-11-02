@@ -138,7 +138,7 @@ export function AddTransactionView({ onComplete }: { onComplete: () => void }) {
             title: "Transaction Undone",
             description: `"${lastTransaction.description}" was removed.`,
         });
-        handleReset(true);
+        handleReset(false); // don't close dialog, just go back to start
     }
   }
 
@@ -182,7 +182,7 @@ export function AddTransactionView({ onComplete }: { onComplete: () => void }) {
                 className="w-full"
               >
                 {step === "amount" && (
-                  <Numpad onConfirm={handleAmountSubmit} />
+                  <Numpad onConfirm={handleAmountSubmit} initialValue="0" />
                 )}
 
                 {step === "description" && (
@@ -315,14 +315,12 @@ export function AddTransactionDialog({ open, onOpenChange }: { open: boolean, on
                 <DialogHeader className="sr-only">
                     <DialogTitle>Add New Transaction</DialogTitle>
                 </DialogHeader>
+                 <Button variant="ghost" size="icon" className="absolute top-4 right-4 z-10" onClick={() => onOpenChange(false)}>
+                    <X />
+                    <span className="sr-only">Close</span>
+                </Button>
                 <AddTransactionView onComplete={() => onOpenChange(false)} />
             </DialogContent>
         </Dialog>
     )
 }
-
-    
-
-    
-
-    

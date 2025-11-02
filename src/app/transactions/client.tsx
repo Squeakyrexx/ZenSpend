@@ -77,7 +77,7 @@ export function EditTransactionDialog({
   const [description, setDescription] = React.useState("");
   const [amount, setAmount] = React.useState(0);
   const [category, setCategory] = React.useState<Category | "">("");
-  const [date, setDate] = React.useState<Date | undefined>(undefined);
+  const [date, setDate] = React.useState<Date | undefined>(new Date());
   const [isNumpadOpen, setIsNumpadOpen] = React.useState(false);
 
   const { toast } = useToast();

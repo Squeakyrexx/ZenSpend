@@ -102,6 +102,11 @@ export function DashboardClient() {
     useZenStore();
   const [insights, setInsights] = React.useState<Insight[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
+  const [currentDate, setCurrentDate] = React.useState('');
+
+  React.useEffect(() => {
+      setCurrentDate(format(new Date(), "eeee, MMMM do"));
+  }, []);
 
   const handleGenerateInsights = async () => {
     setIsLoading(true);
@@ -234,7 +239,7 @@ export function DashboardClient() {
         <CardHeader>
           <CardTitle className="text-4xl font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">Welcome Back!</CardTitle>
           <CardDescription>
-            Here's a quick overview of your financial world.
+            {currentDate}. Here's a quick overview of your financial world.
           </CardDescription>
         </CardHeader>
       </Card>
