@@ -31,10 +31,11 @@ const nextConfig: NextConfig = {
     ],
   },
   experimental: {
-    allowedDevOrigins: [
-        "https://*.cloudworkstations.dev",
-    ]
-  }
+    // Empty for now, but leaving the object in case other experimental features are needed.
+  },
+  allowedDevOrigins: [
+      "https://*.cloudworkstations.dev",
+  ]
 };
 
 export default nextConfig;
