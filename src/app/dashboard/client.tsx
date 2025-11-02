@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Icon } from '@/lib/icons.tsx';
-import { format, differenceInDays, isPast, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, startOfToday } from 'date-fns';
+import { format, differenceInDays, isPast, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, startOfToday, isSameMonth } from 'date-fns';
 import {
   Area,
   AreaChart,
