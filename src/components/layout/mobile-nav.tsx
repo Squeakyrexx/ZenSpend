@@ -10,8 +10,7 @@ const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/transactions", label: "Transactions", icon: Receipt },
   { href: "/budgets", label: "Budgets", icon: Wallet },
-  { href: "/insights", label: "Insights", icon: Sparkles },
-  { href: "/recurring", label: "Recurring", icon: Repeat },
+  { href: "/calendar", label: "Calendar", icon: CalendarDays },
 ];
 
 export function MobileNav() {
@@ -19,7 +18,7 @@ export function MobileNav() {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur-sm md:hidden">
-      <nav className="grid grid-cols-5 items-center justify-around h-16">
+      <nav className="grid grid-cols-4 items-center justify-around h-16">
         {navItems.map((item) => (
           <Link
             key={item.href}

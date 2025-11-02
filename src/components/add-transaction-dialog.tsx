@@ -6,7 +6,6 @@ import { Loader2, Sparkles, ArrowRight, Check, Undo2, X, CalendarIcon } from "lu
 import { AnimatePresence, motion } from "framer-motion";
 
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useZenStore } from "@/hooks/use-zen-store";
 import type { Transaction, Category } from "@/lib/types";
@@ -138,8 +137,8 @@ export function AddTransactionView({ onComplete }: { onComplete: () => void }) {
             title: "Transaction Undone",
             description: `"${lastTransaction.description}" was removed.`,
         });
-        handleReset(false); // don't close dialog, just go back to start
     }
+    handleReset(false); // don't close dialog, just go back to start
   }
 
   const currentTitle = {
@@ -182,14 +181,14 @@ export function AddTransactionView({ onComplete }: { onComplete: () => void }) {
                 className="w-full"
               >
                 {step === "amount" && (
-                  <Numpad onConfirm={handleAmountSubmit} initialValue="0" />
+                  <Numpad onConfirm={handleAmountSubmit} initialValue={amount.toString()} />
                 )}
 
                 {step === "description" && (
                    <div className="space-y-4">
-                     <Textarea
+                     <Input
                        placeholder="e.g. Lunch with friends, gas, new shoes"
-                       className="min-h-[100px] text-lg rounded-xl focus-visible:ring-offset-4 focus-visible:ring-primary/50"
+                       className="h-14 text-lg rounded-xl focus-visible:ring-offset-4 focus-visible:ring-primary/50"
                        value={descriptionInput}
                        onChange={(e) => setDescriptionInput(e.target.value)}
                        autoFocus
