@@ -151,19 +151,10 @@ export function DashboardClient() {
       end: today
     });
 
-    const categoryColors: Record<string, string> = {
-      'Food & Drink': 'hsl(var(--chart-1))',
-      'Transportation': 'hsl(var(--chart-2))',
-      'Entertainment': 'hsl(var(--chart-3))',
-      'Essentials': 'hsl(var(--chart-4))',
-      'Shopping': 'hsl(var(--chart-5))',
-      'Misc': 'hsl(var(--muted-foreground))'
-    };
-    
-    const dynamicChartConfig: ChartConfig = budgets.reduce((acc, budget) => {
+    const dynamicChartConfig = budgets.reduce((acc, budget, index) => {
       acc[budget.category] = {
         label: budget.category,
-        color: categoryColors[budget.category] || `hsl(${Math.random() * 360}, 45%, 65%)`
+        color: `hsl(var(--chart-${(index % 5) + 1}))`
       };
       return acc;
     }, {} as ChartConfig);
@@ -293,14 +284,6 @@ export function DashboardClient() {
                                 bottom: 0,
                               }}
                             >
-                             <defs>
-                                {Object.keys(chartConfig).map(key => (
-                                     <linearGradient key={key} id={`color-${key}`} x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor={`var(--color-${key})`} stopOpacity={0.8}/>
-                                        <stop offset="95%" stopColor={`var(--color-${key})`} stopOpacity={0}/>
-                                    </linearGradient>
-                                ))}
-                            </defs>
                               <YAxis
                                 stroke="hsl(var(--muted-foreground))"
                                 fontSize={12}
@@ -328,7 +311,8 @@ export function DashboardClient() {
                                     key={key}
                                     dataKey={key}
                                     type="monotone"
-                                    fill={`url(#color-${key})`}
+                                    fillOpacity={0.4}
+                                    fill={`var(--color-${key})`}
                                     stroke={`var(--color-${key})`}
                                     stackId="a"
                                 />
