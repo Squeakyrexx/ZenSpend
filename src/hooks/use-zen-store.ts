@@ -169,14 +169,19 @@ export const useZenStore = () => {
     }, [setTransactions, setInternalBudgets, setRecurringPayments, setIncomes]
   );
   
-  // Recalculate budget spent amounts whenever transactions change
+  // Recalculate budget spent amounts whenever transactions or recurring payments change
   useEffect(() => {
-    const startOfCurrentMonth = startOfMonth(new Date());
+    const today = new Date();
+    const startOfCurrentMonth = startOfMonth(today);
+    
+    // Get transactions that have already happened this month
     const monthlyTransactions = transactions.filter(t => isSameMonth(new Date(t.date), startOfCurrentMonth));
 
     setInternalBudgets(prevBudgets => {
+        // Reset spent amount to 0 for all budgets
         const newBudgets = prevBudgets.map(b => ({...b, spent: 0}));
         
+        // Add amounts from transactions that already occurred this month
         monthlyTransactions.forEach(t => {
             const budget = newBudgets.find(b => b.category === t.category);
             if (budget) {
@@ -184,12 +189,31 @@ export const useZenStore = () => {
             }
         });
         
+        // Add amounts from recurring payments scheduled for this month
+        recurringPayments.forEach(p => {
+          const budget = newBudgets.find(b => b.category === p.category);
+          if (budget) {
+            // Check if this recurring payment has already been logged as a transaction
+            const isAlreadyLogged = monthlyTransactions.some(t => 
+                t.description === p.description && 
+                t.amount === p.amount &&
+                isSameMonth(new Date(t.date), startOfCurrentMonth)
+            );
+
+            // If it's not already logged as a transaction, add its amount to the spent total
+            if (!isAlreadyLogged) {
+              budget.spent += p.amount;
+            }
+          }
+        });
+
+        // Only update state if the calculated values have actually changed
         if (JSON.stringify(newBudgets) !== JSON.stringify(prevBudgets)) {
             return newBudgets;
         }
         return prevBudgets;
     });
-  }, [transactions, setInternalBudgets]);
+  }, [transactions, recurringPayments, setInternalBudgets]);
   
   
   const calculateMonthlyIncome = useCallback(() => {
